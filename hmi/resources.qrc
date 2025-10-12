@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>resources/icons/navigation.png</file>
+        <file>resources/icons/start.png</file>
+        <file>resources/icons/route.png</file>
+        <file>resources/icons/clear.png</file>
+        <file>resources/icons/play.png</file>
+        <file>resources/icons/stop.png</file>
+        <file>resources/icons/service.png</file>
+        <file>resources/icons/reconnect.png</file>
+        <file>resources/icons/load.png</file>
+        <file>resources/icons/safe.png</file>
+        <file>maps/hanoi_satellite.jpg</file>
+        <file>maps/hanoi_street.jpg</file>
+        <file>maps/vietnam_overview.jpg</file>
+    </qresource>
+</RCC>

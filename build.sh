@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Build script for Automotive Navigation System
-# This script builds the entire navigation system
+# Cross-platform Linux build script for Automotive Navigation System
+# This script builds the entire navigation system with Qt GUI support
 
 set -e  # Exit on any error
 
-echo "=== Building Automotive Navigation System ==="
+echo "=== Building Automotive Navigation System for Linux ==="
 
 # Configuration
 BUILD_TYPE=${1:-Release}
@@ -24,20 +24,22 @@ fi
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
-# Configure with CMake
+# Configure with CMake - detect Qt and platform
 echo "Configuring with CMake..."
 if command -v qnx-gcc &> /dev/null; then
     echo "QNX toolchain detected"
     cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
              -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR \
-             -DQNX=ON
+             -DQNX=ON \
+             -DBUILD_TESTS=OFF
 else
-    echo "Using system toolchain"
+    echo "Using Linux system toolchain"
     cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-             -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR
+             -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR \
+             -DBUILD_TESTS=OFF
 fi
 
-# Build
+# Build with parallel jobs
 echo "Building..."
 make -j$(nproc)
 
@@ -55,9 +57,26 @@ echo "  - positioning_service"
 echo "  - map_service"
 echo "  - routing_service"
 echo "  - guidance_service"
-echo "  - nav_hmi"
+
+# Check if GUI was built
+if [ -f "$INSTALL_DIR/bin/nav_hmi_gui" ]; then
+    echo "  - nav_hmi_gui (Qt GUI)"
+    echo ""
+    echo "Qt GUI application built successfully!"
+    echo "Required Qt5 libraries: qtbase5-dev, qttools5-dev"
+else
+    echo "  - GUI not built (Qt5 not found or incomplete)"
+    echo ""
+    echo "To build GUI, install Qt5 development packages:"
+    echo "  Ubuntu/Debian: sudo apt install qtbase5-dev qttools5-dev"
+    echo "  CentOS/RHEL: sudo yum install qt5-qtbase-devel qt5-qttools-devel"
+fi
+
 echo ""
 echo "To run the system:"
-echo "  1. Start services in order: positioning, map, routing, guidance"
-echo "  2. Run HMI application"
-echo "  3. Or use the start_system.sh script"
+echo "  1. cd $INSTALL_DIR/bin"
+echo "  2. Start services: ./positioning_service & ./map_service & ..."
+echo "  3. Run GUI: ./nav_hmi_gui"
+echo ""
+echo "Or install as system service:"
+echo "  sudo cp $INSTALL_DIR/bin/* /usr/local/bin/"

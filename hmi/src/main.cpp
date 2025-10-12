@@ -2,7 +2,7 @@
 #include <QStyleFactory>
 #include <QDir>
 #include <QDebug>
-#include "include/navigation_main_window.h"
+#include "../ui/include/navigation_main_window.h"
 
 int main(int argc, char *argv[])
 {

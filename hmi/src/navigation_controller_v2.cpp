@@ -7,7 +7,7 @@ namespace nav {
 
 NavigationController::NavigationController(QObject *parent)
     : QObject(parent)
-    , m_serviceManager(nullptr)
+    , m_processManager(nullptr)
     , m_operationMode(SIMULATION_MODE)
     , m_simulationTimer(nullptr)
     , m_simulationSpeed(5)
@@ -19,8 +19,18 @@ NavigationController::NavigationController(QObject *parent)
     , m_currentSpeed(0.0)
     , m_hasActiveRoute(false)
 {
-    // Initialize service manager
-    m_serviceManager = std::make_shared<ServiceManager>();
+    // Initialize process manager
+    m_processManager = std::make_shared<ProcessManager>(this);
+    
+    // Connect process manager signals
+    connect(m_processManager.get(), &ProcessManager::serviceStarted,
+            this, &NavigationController::onServiceStarted);
+    connect(m_processManager.get(), &ProcessManager::serviceStopped,
+            this, &NavigationController::onServiceStopped);
+    connect(m_processManager.get(), &ProcessManager::serviceError,
+            this, &NavigationController::onServiceError);
+    connect(m_processManager.get(), &ProcessManager::messageReceived,
+            this, &NavigationController::onMessageReceived);
     
     // Setup simulation timer (fallback)
     m_simulationTimer = new QTimer(this);
@@ -28,12 +38,26 @@ NavigationController::NavigationController(QObject *parent)
             this, &NavigationController::updateSimulation);
     
     // Try to initialize services
+    qDebug() << "🚀 [SERVICE INIT] Attempting to initialize services...";
+    
+    // Force console output for debugging
+    qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+        static QFile debugFile("navigation_debug.log");
+        if (!debugFile.isOpen()) {
+            debugFile.open(QIODevice::WriteOnly | QIODevice::Append);
+        }
+        QTextStream stream(&debugFile);
+        stream << QDateTime::currentDateTime().toString() << " - " << msg << Qt::endl;
+        stream.flush();
+    });
+    
     if (initializeServices()) {
         setOperationMode(SERVICE_MODE);
-        qDebug() << "Navigation controller initialized in SERVICE mode";
+        qDebug() << "✅ [SERVICE INIT] Navigation controller initialized in SERVICE mode";
+        qDebug() << "🔍 [SERVICE INIT] Services running check:" << areServicesConnected();
     } else {
         setOperationMode(SIMULATION_MODE);
-        qDebug() << "Navigation controller initialized in SIMULATION mode (services unavailable)";
+        qDebug() << "⚠️ [SERVICE INIT] Navigation controller initialized in SIMULATION mode (services unavailable)";
     }
 }
 
@@ -43,70 +67,42 @@ NavigationController::~NavigationController()
         stopSimulation();
     }
     
-    if (m_serviceManager) {
-        m_serviceManager->shutdown();
+    if (m_processManager) {
+        m_processManager->shutdownServices();
     }
 }
 
 bool NavigationController::initializeServices()
 {
-    if (!m_serviceManager->initialize()) {
-        qDebug() << "Failed to initialize service manager";
+    qDebug() << "🚀 [PROCESS MANAGER] initializeServices() called";
+    if (!m_processManager->initializeServices()) {
+        qDebug() << "❌ [PROCESS MANAGER] Failed to initialize process manager";
         return false;
     }
-    
-    // Get service instances
-    m_positioningService = m_serviceManager->getPositioningService();
-    m_routingService = m_serviceManager->getRoutingService();
-    m_guidanceService = m_serviceManager->getGuidanceService();
-    m_mapService = m_serviceManager->getMapService();
-    
-    if (!m_positioningService || !m_routingService || !m_guidanceService || !m_mapService) {
-        qDebug() << "Failed to create service instances";
-        return false;
-    }
-    
-    // Setup service callbacks
-    m_positioningService->setPositionCallback(
-        [this](const Point& pos, double heading, double speed) {
-            onServicePositionUpdate(pos, heading, speed);
-        });
-    
-    m_routingService->setRouteCallback(
-        [this](const Route& route) {
-            onServiceRouteCalculated(route);
-        });
-    
-    m_routingService->setRouteErrorCallback(
-        [this](const std::string& error) {
-            onServiceRouteError(error);
-        });
-    
-    m_guidanceService->setGuidanceCallback(
-        [this](const GuidanceInstruction& instruction) {
-            onServiceGuidanceUpdate(instruction);
-        });
-    
-    qDebug() << "Services initialized successfully";
-    return true;
-}
 
-bool NavigationController::areServicesConnected()
+    // Process manager handles service lifecycle automatically
+    // We communicate via IPC messages instead of direct service calls
+    qDebug() << "✅ [PROCESS MANAGER] Process manager initialized successfully";
+    qDebug() << "🔍 [PROCESS MANAGER] Checking if all services are running...";
+    bool allRunning = m_processManager->areAllServicesRunning();
+    qDebug() << "🔍 [PROCESS MANAGER] All services running:" << allRunning;
+    return true;
+}bool NavigationController::areServicesConnected()
 {
-    if (!m_serviceManager) {
+    if (!m_processManager) {
         return false;
     }
     
-    return m_serviceManager->areAllServicesConnected();
+    return m_processManager->areAllServicesRunning();
 }
 
 std::string NavigationController::getServiceStatus()
 {
-    if (!m_serviceManager) {
-        return "Service manager not available";
+    if (!m_processManager) {
+        return "Process manager not available";
     }
     
-    return m_serviceManager->getServiceStatus();
+    return m_processManager->getServiceStatus().toStdString();
 }
 
 void NavigationController::setOperationMode(OperationMode mode)
@@ -152,39 +148,29 @@ bool NavigationController::calculateRoute(const Point& start, const Point& end)
 {
     QMutexLocker locker(&m_mutex);
     
-    qDebug() << "Calculating route from" << start.latitude << "," << start.longitude
+    qDebug() << "🧭 [ROUTE CALC] Calculating route from" << start.latitude << "," << start.longitude
              << "to" << end.latitude << "," << end.longitude;
+    qDebug() << "🔍 [ROUTE CALC] Current operation mode:" << (m_operationMode == SERVICE_MODE ? "SERVICE_MODE" : "SIMULATION_MODE");
+    qDebug() << "🔍 [ROUTE CALC] ProcessManager exists:" << (m_processManager != nullptr);
     
-    if (m_operationMode == SERVICE_MODE && m_routingService && m_routingService->isConnected()) {
-        // Use real routing service
-        RoutingRequest request;
-        request.request_type = RoutingRequest::CALCULATE;
-        request.start_point = start;
-        request.end_point = end;
-        request.algorithm_type = RoutingRequest::ASTAR;
-        request.optimization_type = RoutingRequest::SHORTEST_TIME;
-        
-        return m_routingService->calculateRoute(request);
+    if (m_processManager) {
+        qDebug() << "🔍 [ROUTE CALC] Are all services running:" << m_processManager->areAllServicesRunning();
+    }
+    
+    if (m_operationMode == SERVICE_MODE && m_processManager && m_processManager->areAllServicesRunning()) {
+        // Use IPC to request route from routing service
+        qDebug() << "🔥 [ROUTE CALC] Using SERVICE_MODE - sending IPC request to routing service!";
+        sendRouteRequest(start, end);
+        return true; // Actual response will come via message callback
     } else {
-        // Fallback to simulation
-        Route route;
-        route.route_id = 1;
-        route.node_count = 0;
-        route.total_distance_meters = calculateDistance(start, end);
-        route.estimated_time_seconds = static_cast<uint32_t>(route.total_distance_meters / 13.89); // ~50 km/h
+        // ❌ MANDATORY: Routing service MUST be available - no fallback allowed!
+        qDebug() << "❌ [ROUTE CALC] ROUTING SERVICE NOT AVAILABLE - CANNOT CALCULATE ROUTE!";
+        qDebug() << "❌ [ROUTE CALC] Operation mode:" << (m_operationMode == SERVICE_MODE ? "SERVICE_MODE" : "SIMULATION_MODE");
+        qDebug() << "❌ [ROUTE CALC] All services running:" << (m_processManager ? m_processManager->areAllServicesRunning() : false);
         
-        generateRoutePoints(start, end, route);
-        
-        m_activeRoute = route;
-        m_hasActiveRoute = true;
-        m_simulationProgress = 0.0;
-        
-        // Emit signal with delay to simulate calculation time
-        QTimer::singleShot(500, [this, route]() {
-            emit routeCalculated(route);
-        });
-        
-        return true;
+        // Emit error signal instead of fallback calculation
+        emit routeCalculationFailed("Routing service is not available. Cannot calculate route without the routing service.");
+        return false;
     }
 }
 
@@ -515,6 +501,177 @@ double NavigationController::calculateBearing(const Point& from, const Point& to
     
     double bearing = atan2(y, x) * 180.0 / M_PI;
     return fmod(bearing + 360.0, 360.0); // Normalize to 0-360 degrees
+}
+
+// Process management slots
+void NavigationController::onServiceStarted(ServiceType serviceType)
+{
+    qDebug() << "Service started:" << static_cast<int>(serviceType);
+    
+    // Request initial position when positioning service starts
+    if (serviceType == ServiceType::Positioning) {
+        sendPositionRequest();
+    }
+}
+
+void NavigationController::onServiceStopped(ServiceType serviceType)
+{
+    qDebug() << "Service stopped:" << static_cast<int>(serviceType);
+    
+    // Fall back to simulation mode if critical services stop
+    if (m_operationMode == SERVICE_MODE && 
+        (serviceType == ServiceType::Positioning || serviceType == ServiceType::Routing)) {
+        qWarning() << "Critical service stopped, falling back to simulation mode";
+        setOperationMode(SIMULATION_MODE);
+    }
+}
+
+void NavigationController::onServiceError(ServiceType serviceType, const QString& error)
+{
+    qCritical() << "Service error for" << static_cast<int>(serviceType) << ":" << error;
+    
+    // Handle service errors appropriately
+    if (serviceType == ServiceType::Routing && m_hasActiveRoute) {
+        emit routeCalculated(Route()); // Signal empty route to indicate error
+    }
+}
+
+void NavigationController::onMessageReceived(ServiceType serviceType, const IPCMessage& message)
+{
+    switch (serviceType) {
+        case ServiceType::Positioning:
+            handlePositionMessage(message);
+            break;
+        case ServiceType::Routing:
+            handleRouteMessage(message);
+            break;
+        case ServiceType::Guidance:
+            handleGuidanceMessage(message);
+            break;
+        case ServiceType::Map:
+            handleMapMessage(message);
+            break;
+    }
+}
+
+// IPC message handling
+void NavigationController::handlePositionMessage(const IPCMessage& message)
+{
+    if (message.messageType == MessageTypes::POSITION_UPDATE) {
+        QJsonObject data = message.data;
+        double lat = data["latitude"].toDouble();
+        double lon = data["longitude"].toDouble();
+        double heading = data.contains("heading") ? data["heading"].toDouble() : 0.0;
+        double speed = data.contains("speed") ? data["speed"].toDouble() : 0.0;
+        
+        Point position(lat, lon);
+        onServicePositionUpdate(position, heading, speed);
+    }
+    else if (message.messageType == MessageTypes::POSITION_ERROR) {
+        qWarning() << "Position service error:" << message.data["error"].toString();
+    }
+}
+
+void NavigationController::handleRouteMessage(const IPCMessage& message)
+{
+    if (message.messageType == MessageTypes::ROUTE_RESPONSE) {
+        QJsonObject data = message.data;
+        QJsonArray waypoints = data["waypoints"].toArray();
+        double distance = data["distance"].toDouble();
+        double duration = data["duration"].toDouble();
+        
+        // Convert waypoints to Route
+        Route route;
+        route.total_distance_meters = distance;
+        route.estimated_time_seconds = static_cast<uint32_t>(duration);
+        
+        // For now, we'll store waypoints in a simplified way
+        // In a real implementation, you'd convert to node IDs
+        route.node_count = qMin(waypoints.size(), static_cast<int>(Route::MAX_NODES));
+        for (int i = 0; i < route.node_count && i < Route::MAX_NODES; ++i) {
+            route.nodes[i] = static_cast<uint32_t>(i); // Simplified node ID assignment
+        }
+        
+        onServiceRouteCalculated(route);
+    }
+    else if (message.messageType == MessageTypes::ROUTE_ERROR) {
+        QString error = message.data["error"].toString();
+        onServiceRouteError(error.toStdString());
+    }
+}
+
+void NavigationController::handleGuidanceMessage(const IPCMessage& message)
+{
+    if (message.messageType == MessageTypes::GUIDANCE_UPDATE) {
+        QJsonObject data = message.data;
+        
+        GuidanceInstruction instruction;
+        instruction.turn_type = TurnType::STRAIGHT; // Default turn type
+        instruction.distance_to_turn_meters = data["distanceToNext"].toDouble();
+        
+        QString instructionText = data["instruction"].toString();
+        strncpy(instruction.instruction_text, instructionText.toLocal8Bit().constData(), 
+                sizeof(instruction.instruction_text) - 1);
+        instruction.instruction_text[sizeof(instruction.instruction_text) - 1] = '\0';
+        
+        onServiceGuidanceUpdate(instruction);
+    }
+    else if (message.messageType == MessageTypes::GUIDANCE_ERROR) {
+        qWarning() << "Guidance service error:" << message.data["error"].toString();
+    }
+}
+
+void NavigationController::handleMapMessage(const IPCMessage& message)
+{
+    if (message.messageType == MessageTypes::MAP_UPDATE) {
+        // Handle map updates if needed
+        qDebug() << "Map update received";
+    }
+    else if (message.messageType == MessageTypes::MAP_ERROR) {
+        qWarning() << "Map service error:" << message.data["error"].toString();
+    }
+}
+
+void NavigationController::sendRouteRequest(const Point& start, const Point& end)
+{
+    if (!m_processManager || m_operationMode != SERVICE_MODE) {
+        qDebug() << "❌ [IPC REQUEST] Cannot send route request - ProcessManager unavailable or not in SERVICE_MODE";
+        return;
+    }
+    
+    qDebug() << "🚀 [IPC REQUEST] Sending route request to routing service...";
+    qDebug() << "🚀 [IPC REQUEST] Start:" << start.latitude << "," << start.longitude;
+    qDebug() << "🚀 [IPC REQUEST] End:" << end.latitude << "," << end.longitude;
+    
+    IPCMessage message;
+    message.messageType = MessageTypes::ROUTE_REQUEST;
+    message.serviceType = "Routing";
+    message.data = MessageBuilder::createRouteRequest(
+        QPointF(start.longitude, start.latitude),
+        QPointF(end.longitude, end.latitude)
+    );
+    message.requestId = QUuid::createUuid().toString();
+    
+    qDebug() << "📡 [IPC REQUEST] Message created with ID:" << message.requestId;
+    qDebug() << "📡 [IPC REQUEST] Sending to ProcessManager...";
+    
+    m_processManager->sendMessageToService(ServiceType::Routing, message);
+    qDebug() << "✅ [IPC REQUEST] Route request sent successfully!";
+}
+
+void NavigationController::sendPositionRequest()
+{
+    if (!m_processManager || m_operationMode != SERVICE_MODE) {
+        return;
+    }
+    
+    IPCMessage message;
+    message.messageType = MessageTypes::POSITION_REQUEST;
+    message.serviceType = "Positioning";
+    message.data = MessageBuilder::createPositionRequest();
+    message.requestId = QUuid::createUuid().toString();
+    
+    m_processManager->sendMessageToService(ServiceType::Positioning, message);
 }
 
 } // namespace nav

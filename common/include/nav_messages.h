@@ -2,6 +2,8 @@
 
 #include "nav_types.h"
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace nav {
 
@@ -177,6 +179,179 @@ struct NavMessage {
     explicit NavMessage(MessageType type) {
         header = MessageHeader(type);
     }
+};
+
+// Service request/response types for HMI communication
+enum class RoutingRequestType : uint32_t {
+    CALCULATE = 1,
+    CANCEL = 2
+};
+
+enum class RoutingAlgorithm : uint32_t {
+    ASTAR = 1,
+    DIJKSTRA = 2
+};
+
+enum class RoutingCriteria : uint32_t {
+    SHORTEST_DISTANCE = 1,
+    SHORTEST_TIME = 2,
+    LEAST_FUEL = 3
+};
+
+struct RoutingRequest {
+    RoutingRequestType request_type;  // Changed from 'type' to 'request_type'
+    Point start_point;
+    Point end_point;
+    RoutingAlgorithm algorithm_type;  // Changed from 'algorithm' to 'algorithm_type'
+    RoutingCriteria optimization_type; // Changed from 'criteria' to 'optimization_type'
+    
+    // Backward compatibility constants
+    static constexpr RoutingRequestType CALCULATE = RoutingRequestType::CALCULATE;
+    static constexpr RoutingRequestType CANCEL = RoutingRequestType::CANCEL;
+    
+    RoutingRequest() : request_type(RoutingRequestType::CALCULATE), 
+                      algorithm_type(RoutingAlgorithm::ASTAR), 
+                      optimization_type(RoutingCriteria::SHORTEST_TIME) {}
+};
+
+enum class RoutingResponseStatus : uint32_t {
+    SUCCESS = 1,
+    FAILED = 2,
+    CANCELLED = 3
+};
+
+struct RoutingResponse {
+    RoutingResponseStatus status;
+    Route route;
+    std::string error_message;
+    
+    // Backward compatibility constants
+    static constexpr RoutingResponseStatus SUCCESS = RoutingResponseStatus::SUCCESS;
+    static constexpr RoutingResponseStatus FAILED = RoutingResponseStatus::FAILED;
+    
+    RoutingResponse() : status(RoutingResponseStatus::FAILED) {}
+};
+
+enum class PositioningRequestType : uint32_t {
+    START = 1,
+    STOP = 2,
+    SET_POSITION = 3
+};
+
+struct PositioningRequest {
+    PositioningRequestType request_type;  // Changed from 'type' to 'request_type'
+    Point position; // Used for SET_POSITION
+    
+    // Backward compatibility constants
+    static constexpr PositioningRequestType START = PositioningRequestType::START;
+    static constexpr PositioningRequestType STOP = PositioningRequestType::STOP;
+    static constexpr PositioningRequestType SET_POSITION = PositioningRequestType::SET_POSITION;
+    
+    PositioningRequest() : request_type(PositioningRequestType::START) {}
+};
+
+struct PositioningResponse {
+    bool success;
+    Point current_position;
+    Point position;  // Added for compatibility
+    double heading;  // Added for compatibility
+    double speed;    // Added for compatibility
+    GpsData gps_data;
+    VehicleData vehicle_data;
+    std::string error_message;
+    
+    PositioningResponse() : success(false), heading(0.0), speed(0.0) {}
+};
+
+enum class GuidanceRequestType : uint32_t {
+    START = 1,
+    STOP = 2,
+    UPDATE_POSITION = 3
+};
+
+struct GuidanceRequest {
+    GuidanceRequestType request_type;  // Changed from 'type' to 'request_type'
+    Route route; // Used for START
+    Point position; // Used for UPDATE_POSITION
+    Point current_position; // Added for compatibility
+    
+    // Backward compatibility constants
+    static constexpr GuidanceRequestType START = GuidanceRequestType::START;
+    static constexpr GuidanceRequestType STOP = GuidanceRequestType::STOP;
+    static constexpr GuidanceRequestType UPDATE_POSITION = GuidanceRequestType::UPDATE_POSITION;
+    
+    GuidanceRequest() : request_type(GuidanceRequestType::START) {}
+};
+
+enum class GuidanceResponseType : uint32_t {
+    INSTRUCTION = 1,
+    ROUTE_DEVIATION = 2,
+    ARRIVAL = 3
+};
+
+struct GuidanceResponse {
+    bool success;
+    GuidanceResponseType response_type;
+    GuidanceInstruction current_instruction;
+    GuidanceInstruction instruction;  // Added for compatibility
+    double deviation_distance;  // For route deviation responses
+    std::string error_message;
+    
+    // Backward compatibility constants
+    static constexpr GuidanceResponseType INSTRUCTION = GuidanceResponseType::INSTRUCTION;
+    static constexpr GuidanceResponseType ROUTE_DEVIATION = GuidanceResponseType::ROUTE_DEVIATION;
+    static constexpr GuidanceResponseType ARRIVAL = GuidanceResponseType::ARRIVAL;
+    
+    GuidanceResponse() : success(false), response_type(GuidanceResponseType::INSTRUCTION), deviation_distance(0.0) {}
+};
+
+// Map service types
+struct MapDataRequest {
+    double min_latitude;
+    double max_latitude;
+    double min_longitude;
+    double max_longitude;
+    int zoom_level;
+    
+    MapDataRequest() : min_latitude(0.0), max_latitude(0.0), 
+                      min_longitude(0.0), max_longitude(0.0), zoom_level(10) {}
+};
+
+struct MapDataResponse {
+    bool success;
+    std::vector<MapNode> nodes;
+    std::vector<MapEdge> edges;
+    std::string error_message;
+    
+    MapDataResponse() : success(false) {}
+};
+
+struct MapImageTile {
+    double latitude;
+    double longitude;
+    int zoom_level;
+    std::vector<uint8_t> image_data;
+    std::string format; // "PNG", "JPEG", etc.
+    
+    MapImageTile() : latitude(0.0), longitude(0.0), zoom_level(10), format("PNG") {}
+};
+
+struct MapDisplayTile {
+    double center_lat;
+    double center_lon;
+    int zoom_level;
+    bool has_data;
+    std::vector<uint8_t> tile_data;
+    
+    MapDisplayTile() : center_lat(0.0), center_lon(0.0), zoom_level(10), has_data(false) {}
+};
+
+struct MapTileRequest {
+    double center_lat;   // Changed from latitude to center_lat
+    double center_lon;   // Changed from longitude to center_lon
+    int zoom_level;
+    
+    MapTileRequest() : center_lat(0.0), center_lon(0.0), zoom_level(10) {}
 };
 
 } // namespace nav

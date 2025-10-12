@@ -1,622 +1,811 @@
 #include "../include/navigation_main_window.h"
-#include "../include/navigation_controller_v2.h"
+#include "../include/navigation_models.h"
+#include "../include/map_widget.h"
+#include "../include/service_clients_qt.h"
+#include <QApplication>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGridLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QMessageBox>
+#include <QComboBox>
+#include <QSpinBox>
+#include <QCheckBox>
+#include <QSlider>
+#include <QProgressBar>
+#include <QTextEdit>
+#include <QGroupBox>
+#include <QSplitter>
+#include <QStatusBar>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <QToolBar>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QTimer>
+#include <QDateTime>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QFile>
 #include <QDebug>
+#include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace nav {
 
 NavigationMainWindow::NavigationMainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_centralWidget(nullptr)
-    , m_mainSplitter(nullptr)
     , m_mapRenderer(nullptr)
+    , m_startLatEdit(nullptr)
+    , m_startLonEdit(nullptr)
+    , m_endLatEdit(nullptr)
+    , m_endLonEdit(nullptr)
+    , m_calculateButton(nullptr)
+    , m_clearButton(nullptr)
+    , m_setStartButton(nullptr)
+    , m_setEndButton(nullptr)
+    , m_startSimButton(nullptr)
+    , m_stopSimButton(nullptr)
+    , m_speedSlider(nullptr)
+    , m_speedLabel(nullptr)
+    , m_latitudeLabel(nullptr)
+    , m_longitudeLabel(nullptr)
+    , m_speedValueLabel(nullptr)
+    , m_headingLabel(nullptr)
+    , m_instructionLabel(nullptr)
+    , m_distanceLabel(nullptr)
+    , m_logTextEdit(nullptr)
     , m_navController(nullptr)
-    , m_hasStartPoint(false)
-    , m_hasEndPoint(false)
-    , m_simulationRunning(false)
 {
-    setWindowTitle("Automotive Navigation System");
-    setMinimumSize(1200, 800);
-    resize(1400, 900);
-    
-    // Initialize backend
-    m_navController = new NavigationController(this);
-    
-    // Check service status and show initial mode
-    updateServiceStatus();
-    
-    // Setup UI
-    setupUI();
-    setupMenuBar();
-    setupStatusBar();
+    // Initialize integrated navigation controller
+    m_navController = new IntegratedNavigationController(this);
     
     // Connect signals
-    connect(m_navController, &NavigationController::positionChanged,
+    connect(m_navController, &IntegratedNavigationController::positionChanged,
             this, &NavigationMainWindow::onPositionChanged);
-    connect(m_navController, &NavigationController::routeCalculated,
+    connect(m_navController, &IntegratedNavigationController::routeCalculated,
             this, &NavigationMainWindow::onRouteCalculated);
-    connect(m_navController, &NavigationController::guidanceUpdated,
+    connect(m_navController, &IntegratedNavigationController::guidanceUpdated,
             this, &NavigationMainWindow::onGuidanceUpdated);
     
-    // Set default position
-    Point defaultPos(DEFAULT_LAT, DEFAULT_LON);
-    m_navController->setCurrentPosition(defaultPos);
-    m_mapRenderer->setCurrentPosition(defaultPos);
+    // Initialize services
+    if (!m_navController->initializeServices()) {
+        QMessageBox::critical(this, "Error", "Failed to initialize navigation services");
+    }
     
-    updatePositionDisplay();
-    updateStatusBar();
-    
-    qDebug() << "Navigation window initialized";
+    setupUI();
+    qDebug() << "NavigationMainWindow initialized with integrated controller";
 }
 
 NavigationMainWindow::~NavigationMainWindow()
 {
+    // Cleanup will be handled by Qt parent-child system
 }
 
 void NavigationMainWindow::setupUI()
 {
+    qDebug() << "Setting up UI...";
+    setWindowTitle("Automotive Navigation System");
+    setMinimumSize(800, 600);
+    resize(1200, 800);
+
+    // Create central widget and layout
     m_centralWidget = new QWidget;
     setCentralWidget(m_centralWidget);
-    
-    // Main horizontal splitter
-    m_mainSplitter = new QSplitter(Qt::Horizontal);
-    
-    // Setup components
-    setupMapView();
-    setupControlPanel();
-    
-    // Add to splitter
-    m_mainSplitter->addWidget(m_mapGroup);
-    m_mainSplitter->addWidget(m_controlTabs);
-    m_mainSplitter->setSizes({800, 400});
-    
-    // Main layout
     QVBoxLayout *mainLayout = new QVBoxLayout(m_centralWidget);
-    mainLayout->addWidget(m_mainSplitter);
-    mainLayout->setContentsMargins(5, 5, 5, 5);
+    qDebug() << "Central widget and layout created";
+
+    // Create map view
+    setupMapView();
+    if (m_mapRenderer) {
+        mainLayout->addWidget(m_mapRenderer);
+        qDebug() << "Map renderer added to layout";
+    }
+
+    // Setup control panel
+    setupControlPanel();
+    qDebug() << "Control panel setup completed";
+    
+    // Setup info panel  
+    setupInfoPanel();
+    qDebug() << "Info panel setup completed";
+
+    // Setup menu and status bar
+    setupMenuBar();
+    setupStatusBar();
+
+    qDebug() << "Main UI setup completed";
 }
 
 void NavigationMainWindow::setupMapView()
 {
-    m_mapGroup = new QGroupBox("Map View");
-    QVBoxLayout *mapLayout = new QVBoxLayout(m_mapGroup);
-    
-    m_mapRenderer = new MapRenderer();
-    mapLayout->addWidget(m_mapRenderer);
-    
-    // Connect map signals
-    connect(m_mapRenderer, &MapRenderer::mapClicked,
-            this, &NavigationMainWindow::onMapClicked);
+    qDebug() << "Creating MapWidget...";
+    m_mapRenderer = new MapWidget(this);
+    m_mapRenderer->setMinimumSize(400, 300);
+    qDebug() << "MapWidget created with size:" << m_mapRenderer->size();
 }
 
 void NavigationMainWindow::setupControlPanel()
 {
-    m_controlTabs = new QTabWidget();
+    // Route Planning Group
+    QGroupBox *routeGroup = new QGroupBox("Route Planning");
+    QVBoxLayout *routeLayout = new QVBoxLayout(routeGroup);
     
-    // Route planning tab
-    QWidget *routeTab = new QWidget();
-    QVBoxLayout *routeLayout = new QVBoxLayout(routeTab);
+    // Start Point Section
+    QGroupBox *startGroup = new QGroupBox("Start Point");
+    QGridLayout *startLayout = new QGridLayout(startGroup);
     
-    // Route input group
-    m_routeGroup = new QGroupBox("Route Planning");
-    QGridLayout *routeGrid = new QGridLayout(m_routeGroup);
+    startLayout->addWidget(new QLabel("Latitude:"), 0, 0);
+    m_startLatEdit = new QLineEdit("21.028511"); // Default Hanoi
+    m_startLatEdit->setPlaceholderText("e.g. 21.028511");
+    startLayout->addWidget(m_startLatEdit, 0, 1);
     
-    // Start point
-    routeGrid->addWidget(new QLabel("Start Latitude:"), 0, 0);
-    m_startLatEdit = new QLineEdit();
-    m_startLatEdit->setText("21.028511");
-    routeGrid->addWidget(m_startLatEdit, 0, 1);
+    startLayout->addWidget(new QLabel("Longitude:"), 1, 0);
+    m_startLonEdit = new QLineEdit("105.804817"); // Default Hanoi
+    m_startLonEdit->setPlaceholderText("e.g. 105.804817");
+    startLayout->addWidget(m_startLonEdit, 1, 1);
     
-    routeGrid->addWidget(new QLabel("Start Longitude:"), 1, 0);
-    m_startLonEdit = new QLineEdit();
-    m_startLonEdit->setText("105.804817");
-    routeGrid->addWidget(m_startLonEdit, 1, 1);
+    m_setStartButton = new QPushButton("Use Current Position");
+    startLayout->addWidget(m_setStartButton, 2, 0, 1, 2);
     
-    m_setStartButton = new QPushButton("Set as Current Position");
-    routeGrid->addWidget(m_setStartButton, 2, 0, 1, 2);
+    // End Point Section
+    QGroupBox *endGroup = new QGroupBox("Destination");
+    QGridLayout *endLayout = new QGridLayout(endGroup);
     
-    // End point
-    routeGrid->addWidget(new QLabel("End Latitude:"), 3, 0);
-    m_endLatEdit = new QLineEdit();
-    m_endLatEdit->setText("21.035000");
-    routeGrid->addWidget(m_endLatEdit, 3, 1);
+    endLayout->addWidget(new QLabel("Latitude:"), 0, 0);
+    m_endLatEdit = new QLineEdit("21.035000"); // Default destination
+    m_endLatEdit->setPlaceholderText("e.g. 21.035000");
+    endLayout->addWidget(m_endLatEdit, 0, 1);
     
-    routeGrid->addWidget(new QLabel("End Longitude:"), 4, 0);
-    m_endLonEdit = new QLineEdit();
-    m_endLonEdit->setText("105.820000");
-    routeGrid->addWidget(m_endLonEdit, 4, 1);
+    endLayout->addWidget(new QLabel("Longitude:"), 1, 0);
+    m_endLonEdit = new QLineEdit("105.820000"); // Default destination
+    m_endLonEdit->setPlaceholderText("e.g. 105.820000");
+    endLayout->addWidget(m_endLonEdit, 1, 1);
     
-    // Buttons
+    m_setEndButton = new QPushButton("Set on Map");
+    endLayout->addWidget(m_setEndButton, 2, 0, 1, 2);
+    
+    // Control Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    m_calculateButton = new QPushButton("Calculate Route");
+    m_calculateButton = new QPushButton("Calculate Shortest Route");
+    m_calculateButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }");
     m_clearButton = new QPushButton("Clear Route");
+    m_clearButton->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 8px; }");
+    
     buttonLayout->addWidget(m_calculateButton);
     buttonLayout->addWidget(m_clearButton);
-    routeGrid->addLayout(buttonLayout, 5, 0, 1, 2);
     
-    routeLayout->addWidget(m_routeGroup);
+    // Route Information
+    QGroupBox *infoGroup = new QGroupBox("Route Information");
+    QVBoxLayout *infoLayout = new QVBoxLayout(infoGroup);
     
-    // Simulation group
-    m_simulationGroup = new QGroupBox("Simulation Control");
-    QVBoxLayout *simLayout = new QVBoxLayout(m_simulationGroup);
+    m_totalDistanceLabel = new QLabel("Total Distance: --");
+    m_totalTimeLabel = new QLabel("Estimated Time: --");
+    m_remainingDistanceLabel = new QLabel("Remaining: --");
     
-    QHBoxLayout *simButtonLayout = new QHBoxLayout();
-    m_startSimButton = new QPushButton("Start Simulation");
-    m_stopSimButton = new QPushButton("Stop Simulation");
-    m_stopSimButton->setEnabled(false);
-    simButtonLayout->addWidget(m_startSimButton);
-    simButtonLayout->addWidget(m_stopSimButton);
-    simLayout->addLayout(simButtonLayout);
+    infoLayout->addWidget(m_totalDistanceLabel);
+    infoLayout->addWidget(m_totalTimeLabel);
+    infoLayout->addWidget(m_remainingDistanceLabel);
     
-    // Speed control
-    QHBoxLayout *speedLayout = new QHBoxLayout();
-    speedLayout->addWidget(new QLabel("Speed:"));
-    m_speedSlider = new QSlider(Qt::Horizontal);
-    m_speedSlider->setRange(1, 10);
-    m_speedSlider->setValue(5);
-    m_speedLabel = new QLabel("5x");
-    speedLayout->addWidget(m_speedSlider);
-    speedLayout->addWidget(m_speedLabel);
-    simLayout->addLayout(speedLayout);
-    
-    // Progress bar
-    m_routeProgress = new QProgressBar();
-    simLayout->addWidget(new QLabel("Route Progress:"));
-    simLayout->addWidget(m_routeProgress);
-    
-    routeLayout->addWidget(m_simulationGroup);
-    routeLayout->addStretch();
-    
-    m_controlTabs->addTab(routeTab, "Route & Simulation");
-    
-    // Information tab
-    setupInfoPanel();
-    
-    // Service control tab
-    setupServicePanel();
+    // Assemble route group
+    routeLayout->addWidget(startGroup);
+    routeLayout->addWidget(endGroup);
+    routeLayout->addLayout(buttonLayout);
+    routeLayout->addWidget(infoGroup);
     
     // Connect signals
     connect(m_calculateButton, &QPushButton::clicked, this, &NavigationMainWindow::onCalculateRoute);
     connect(m_clearButton, &QPushButton::clicked, this, &NavigationMainWindow::onClearRoute);
-    connect(m_startSimButton, &QPushButton::clicked, this, &NavigationMainWindow::onStartSimulation);
-    connect(m_stopSimButton, &QPushButton::clicked, this, &NavigationMainWindow::onStopSimulation);
     connect(m_setStartButton, &QPushButton::clicked, this, &NavigationMainWindow::onSetStartPoint);
-    connect(m_speedSlider, &QSlider::valueChanged, this, &NavigationMainWindow::onSimulationSpeedChanged);
-}
-
-void NavigationMainWindow::setupServicePanel()
-{
-    QWidget *serviceTab = new QWidget();
-    QVBoxLayout *serviceLayout = new QVBoxLayout(serviceTab);
+    connect(m_setEndButton, &QPushButton::clicked, this, &NavigationMainWindow::onSetEndPoint);
     
-    // Service status group
-    m_serviceGroup = new QGroupBox("Service Management");
-    QVBoxLayout *serviceGroupLayout = new QVBoxLayout(m_serviceGroup);
-    
-    // Current mode display
-    QHBoxLayout *modeLayout = new QHBoxLayout();
-    modeLayout->addWidget(new QLabel("Current Mode:"));
-    m_serviceModeLabel = new QLabel("Checking...");
-    m_serviceModeLabel->setStyleSheet("font-weight: bold; color: orange;");
-    modeLayout->addWidget(m_serviceModeLabel);
-    modeLayout->addStretch();
-    serviceGroupLayout->addLayout(modeLayout);
-    
-    // Control buttons
-    QHBoxLayout *controlLayout = new QHBoxLayout();
-    m_toggleModeButton = new QPushButton("Switch to Service Mode");
-    m_reconnectButton = new QPushButton("Reconnect Services");
-    
-    controlLayout->addWidget(m_toggleModeButton);
-    controlLayout->addWidget(m_reconnectButton);
-    controlLayout->addStretch();
-    serviceGroupLayout->addLayout(controlLayout);
-    
-    // Service status text
-    m_serviceStatusText = new QTextEdit();
-    m_serviceStatusText->setMaximumHeight(200);
-    m_serviceStatusText->setReadOnly(true);
-    serviceGroupLayout->addWidget(new QLabel("Service Status:"));
-    serviceGroupLayout->addWidget(m_serviceStatusText);
-    
-    serviceLayout->addWidget(m_serviceGroup);
-    serviceLayout->addStretch();
-    
-    m_controlTabs->addTab(serviceTab, "Service Control");
-    
-    // Connect service control signals
-    connect(m_toggleModeButton, &QPushButton::clicked, this, &NavigationMainWindow::onServiceModeChanged);
-    connect(m_reconnectButton, &QPushButton::clicked, [this]() {
-        m_logTextEdit->append("Attempting to reconnect services...");
-        updateServiceStatus();
-    });
+    // Add to central widget layout
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(m_centralWidget->layout());
+    if (mainLayout) {
+        mainLayout->addWidget(routeGroup);
+    }
 }
 
 void NavigationMainWindow::setupInfoPanel()
 {
-    QWidget *infoTab = new QWidget();
-    QVBoxLayout *infoLayout = new QVBoxLayout(infoTab);
+    // Basic info panel implementation
+    QGroupBox *infoGroup = new QGroupBox("Current Position");
+    QVBoxLayout *layout = new QVBoxLayout(infoGroup);
     
-    // Position info
-    m_positionGroup = new QGroupBox("Current Position");
-    QGridLayout *posGrid = new QGridLayout(m_positionGroup);
+    // Current position display
+    m_latitudeLabel = new QLabel("Latitude: --");
+    m_longitudeLabel = new QLabel("Longitude: --");
+    m_speedValueLabel = new QLabel("Speed: --");
+    m_headingLabel = new QLabel("Heading: --");
     
-    posGrid->addWidget(new QLabel("Latitude:"), 0, 0);
-    m_latitudeLabel = new QLabel("0.000000");
-    posGrid->addWidget(m_latitudeLabel, 0, 1);
+    layout->addWidget(m_latitudeLabel);
+    layout->addWidget(m_longitudeLabel);
+    layout->addWidget(m_speedValueLabel);
+    layout->addWidget(m_headingLabel);
     
-    posGrid->addWidget(new QLabel("Longitude:"), 1, 0);
-    m_longitudeLabel = new QLabel("0.000000");
-    posGrid->addWidget(m_longitudeLabel, 1, 1);
+    // Button to get current position
+    QPushButton *getCurrentPosButton = new QPushButton("Get Current Position");
+    getCurrentPosButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 8px; }");
+    layout->addWidget(getCurrentPosButton);
     
-    posGrid->addWidget(new QLabel("Speed:"), 2, 0);
-    m_speedValueLabel = new QLabel("0 km/h");
-    posGrid->addWidget(m_speedValueLabel, 2, 1);
+    // Connect button to get current position
+    connect(getCurrentPosButton, &QPushButton::clicked, this, &NavigationMainWindow::onGetCurrentPosition);
     
-    posGrid->addWidget(new QLabel("Heading:"), 3, 0);
-    m_headingLabel = new QLabel("0°");
-    posGrid->addWidget(m_headingLabel, 3, 1);
+    // Add to central widget layout
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(m_centralWidget->layout());
+    if (mainLayout) {
+        mainLayout->addWidget(infoGroup);
+    }
     
-    infoLayout->addWidget(m_positionGroup);
-    
-    // Guidance info
-    m_guidanceGroup = new QGroupBox("Current Guidance");
-    QVBoxLayout *guidanceLayout = new QVBoxLayout(m_guidanceGroup);
-    
-    m_instructionLabel = new QLabel("No active guidance");
-    m_instructionLabel->setWordWrap(true);
-    m_instructionLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
-    guidanceLayout->addWidget(m_instructionLabel);
-    
-    m_distanceLabel = new QLabel("Distance: -");
-    guidanceLayout->addWidget(m_distanceLabel);
-    
-    m_timeLabel = new QLabel("Time: -");
-    guidanceLayout->addWidget(m_timeLabel);
-    
-    infoLayout->addWidget(m_guidanceGroup);
-    
-    // Route info
-    m_routeInfoGroup = new QGroupBox("Route Information");
-    QGridLayout *routeInfoGrid = new QGridLayout(m_routeInfoGroup);
-    
-    routeInfoGrid->addWidget(new QLabel("Total Distance:"), 0, 0);
-    m_totalDistanceLabel = new QLabel("-");
-    routeInfoGrid->addWidget(m_totalDistanceLabel, 0, 1);
-    
-    routeInfoGrid->addWidget(new QLabel("Total Time:"), 1, 0);
-    m_totalTimeLabel = new QLabel("-");
-    routeInfoGrid->addWidget(m_totalTimeLabel, 1, 1);
-    
-    routeInfoGrid->addWidget(new QLabel("Remaining Distance:"), 2, 0);
-    m_remainingDistanceLabel = new QLabel("-");
-    routeInfoGrid->addWidget(m_remainingDistanceLabel, 2, 1);
-    
-    routeInfoGrid->addWidget(new QLabel("Remaining Time:"), 3, 0);
-    m_remainingTimeLabel = new QLabel("-");
-    routeInfoGrid->addWidget(m_remainingTimeLabel, 3, 1);
-    
-    infoLayout->addWidget(m_routeInfoGroup);
-    
-    // Log display
-    QGroupBox *logGroup = new QGroupBox("System Log");
-    QVBoxLayout *logLayout = new QVBoxLayout(logGroup);
-    
-    m_logTextEdit = new QTextEdit();
-    m_logTextEdit->setMaximumHeight(150);
-    m_logTextEdit->append("Navigation system initialized");
-    logLayout->addWidget(m_logTextEdit);
-    
-    infoLayout->addWidget(logGroup);
-    infoLayout->addStretch();
-    
-    m_controlTabs->addTab(infoTab, "Information");
+    // Add Manual Control Panel
+    setupManualControlPanel();
+}
 }
 
 void NavigationMainWindow::setupMenuBar()
 {
-    // File menu
-    QMenu *fileMenu = menuBar()->addMenu("&File");
+    QMenuBar *menuBar = this->menuBar();
+    QMenu *fileMenu = menuBar->addMenu("&File");
+    QMenu *viewMenu = menuBar->addMenu("&View");
+    QMenu *helpMenu = menuBar->addMenu("&Help");
     
-    m_exitAction = new QAction("&Exit", this);
-    m_exitAction->setShortcut(QKeySequence::Quit);
-    connect(m_exitAction, &QAction::triggered, this, &QWidget::close);
-    fileMenu->addAction(m_exitAction);
-    
-    // Help menu
-    QMenu *helpMenu = menuBar()->addMenu("&Help");
-    
-    m_aboutAction = new QAction("&About", this);
-    connect(m_aboutAction, &QAction::triggered, [this]() {
-        QMessageBox::about(this, "About", 
-            "Automotive Navigation System\n"
-            "Version 1.0\n\n"
-            "A complete navigation system simulation\n"
-            "with route planning and guidance.");
-    });
-    helpMenu->addAction(m_aboutAction);
+    QAction *exitAction = fileMenu->addAction("E&xit");
+    connect(exitAction, &QAction::triggered, this, &QWidget::close);
 }
 
 void NavigationMainWindow::setupStatusBar()
 {
-    m_statusLabel = new QLabel("Ready");
-    statusBar()->addWidget(m_statusLabel);
+    statusBar()->showMessage("Ready");
 }
 
+// Slot implementations - Route calculation functionality
 void NavigationMainWindow::onCalculateRoute()
 {
-    bool ok;
-    double startLat = m_startLatEdit->text().toDouble(&ok);
-    if (!ok) {
-        QMessageBox::warning(this, "Error", "Invalid start latitude");
+    // Get coordinates from input fields
+    bool ok1, ok2, ok3, ok4;
+    double startLat = m_startLatEdit->text().toDouble(&ok1);
+    double startLon = m_startLonEdit->text().toDouble(&ok2);
+    double endLat = m_endLatEdit->text().toDouble(&ok3);
+    double endLon = m_endLonEdit->text().toDouble(&ok4);
+    
+    if (!ok1 || !ok2 || !ok3 || !ok4) {
+        statusBar()->showMessage("Error: Invalid coordinates format", 5000);
         return;
     }
     
-    double startLon = m_startLonEdit->text().toDouble(&ok);
-    if (!ok) {
-        QMessageBox::warning(this, "Error", "Invalid start longitude");
+    // Validate coordinate ranges
+    if (startLat < -90 || startLat > 90 || endLat < -90 || endLat > 90 ||
+        startLon < -180 || startLon > 180 || endLon < -180 || endLon > 180) {
+        statusBar()->showMessage("Error: Coordinates out of valid range", 5000);
         return;
     }
     
-    double endLat = m_endLatEdit->text().toDouble(&ok);
-    if (!ok) {
-        QMessageBox::warning(this, "Error", "Invalid end latitude");
-        return;
-    }
-    
-    double endLon = m_endLonEdit->text().toDouble(&ok);
-    if (!ok) {
-        QMessageBox::warning(this, "Error", "Invalid end longitude");
-        return;
-    }
-    
-    Point start(startLat, startLon);
-    Point end(endLat, endLon);
-    
-    m_startPoint = start;
-    m_endPoint = end;
+    // Store route points
+    m_startPoint = Point(startLat, startLon);
+    m_endPoint = Point(endLat, endLon);
     m_hasStartPoint = true;
     m_hasEndPoint = true;
     
-    m_mapRenderer->setStartPoint(start);
-    m_mapRenderer->setEndPoint(end);
+    // Check if integrated navigation controller is ready
+    if (!m_navController || !m_navController->areServicesReady()) {
+        statusBar()->showMessage("❌ ERROR: Navigation services are not ready!", 10000);
+        QMessageBox::critical(this, "Service Error", 
+            "❌ Navigation Services Not Ready!\n\n"
+            "The navigation services are required for route calculation but are not initialized.\n"
+            "Please ensure all navigation services are started before calculating routes.\n\n"
+            "Route calculation cannot proceed without the services.");
+        m_calculateButton->setEnabled(true);
+        return;
+    }
     
-    m_statusLabel->setText("Calculating route...");
+    // Use integrated navigation controller for route calculation
+    statusBar()->showMessage("Calculating route using integrated navigation controller...", 0);
     m_calculateButton->setEnabled(false);
     
-    if (m_navController->calculateRoute(start, end)) {
-        m_logTextEdit->append(QString("Route calculation started from (%1, %2) to (%3, %4)")
-                             .arg(startLat, 0, 'f', 6).arg(startLon, 0, 'f', 6)
-                             .arg(endLat, 0, 'f', 6).arg(endLon, 0, 'f', 6));
-    } else {
-        m_statusLabel->setText("Route calculation failed");
+    // Calculate route with integrated controller
+    if (!m_navController->calculateRouteAsync(m_startPoint, m_endPoint, RoutingCriteria::SHORTEST_TIME)) {
+        statusBar()->showMessage("Failed to start route calculation", 5000);
         m_calculateButton->setEnabled(true);
-        QMessageBox::warning(this, "Error", "Failed to calculate route");
     }
 }
 
 void NavigationMainWindow::onClearRoute()
 {
-    m_navController->clearRoute();
-    m_mapRenderer->clearRoute();
-    m_mapRenderer->clearWaypoints();
-    
+    // Reset route state
     m_hasStartPoint = false;
     m_hasEndPoint = false;
     
-    m_routeProgress->setValue(0);
-    updateRouteInfo();
+    // Clear route using integrated controller
+    if (m_navController) {
+        m_navController->clearRoute();
+    }
     
-    m_logTextEdit->append("Route cleared");
-    m_statusLabel->setText("Route cleared");
+    // Clear route information
+    if (m_totalDistanceLabel) m_totalDistanceLabel->setText("Total Distance: --");
+    if (m_totalTimeLabel) m_totalTimeLabel->setText("Estimated Time: --");
+    if (m_remainingDistanceLabel) m_remainingDistanceLabel->setText("Remaining: --");
+    
+    // Clear route from map
+    MapWidget* mapWidget = qobject_cast<MapWidget*>(m_mapRenderer);
+    if (mapWidget) {
+        mapWidget->clearRoute();
+        mapWidget->clearStartPoint();
+        mapWidget->clearEndPoint();
+        qDebug() << "Route cleared from map";
+    }
+    
+    // Re-enable calculate button in case it was disabled
+    if (m_calculateButton) m_calculateButton->setEnabled(true);
+    
+    statusBar()->showMessage("Route cleared", 3000);
+    qDebug() << "Route cleared";
 }
 
 void NavigationMainWindow::onStartSimulation()
 {
-    if (!m_navController->hasActiveRoute()) {
-        QMessageBox::information(this, "Info", "Please calculate a route first");
+    if (!m_navController || !m_navController->areServicesReady()) {
+        statusBar()->showMessage("Cannot start simulation - services not ready", 5000);
         return;
     }
     
-    m_navController->startSimulation();
+    if (!m_navController->hasActiveRoute()) {
+        statusBar()->showMessage("Cannot start simulation - no route calculated", 5000);
+        return;
+    }
+    
+    m_navController->startNavigation();
     m_simulationRunning = true;
     
-    m_startSimButton->setEnabled(false);
-    m_stopSimButton->setEnabled(true);
-    m_calculateButton->setEnabled(false);
+    if (m_startSimButton) m_startSimButton->setEnabled(false);
+    if (m_stopSimButton) m_stopSimButton->setEnabled(true);
     
-    m_logTextEdit->append("Simulation started");
-    m_statusLabel->setText("Simulation running");
+    statusBar()->showMessage("Navigation started", 3000);
+    qDebug() << "Navigation simulation started";
 }
 
 void NavigationMainWindow::onStopSimulation()
 {
-    m_navController->stopSimulation();
+    if (m_navController) {
+        m_navController->stopNavigation();
+    }
+    
     m_simulationRunning = false;
     
-    m_startSimButton->setEnabled(true);
-    m_stopSimButton->setEnabled(false);
-    m_calculateButton->setEnabled(true);
+    if (m_startSimButton) m_startSimButton->setEnabled(true);
+    if (m_stopSimButton) m_stopSimButton->setEnabled(false);
     
-    m_logTextEdit->append("Simulation stopped");
-    m_statusLabel->setText("Simulation stopped");
+    statusBar()->showMessage("Navigation stopped", 3000);
+    qDebug() << "Navigation simulation stopped";
 }
 
 void NavigationMainWindow::onPositionChanged(const Point& position, double heading, double speed)
 {
-    m_mapRenderer->setCurrentPosition(position, heading);
-    updatePositionDisplay();
-    updateStatusBar();
+    if (m_latitudeLabel) {
+        m_latitudeLabel->setText(QString("Latitude: %1").arg(position.latitude, 0, 'f', 6));
+    }
+    if (m_longitudeLabel) {
+        m_longitudeLabel->setText(QString("Longitude: %1").arg(position.longitude, 0, 'f', 6));
+    }
+    if (m_speedValueLabel) {
+        m_speedValueLabel->setText(QString("Speed: %1 km/h").arg(speed, 0, 'f', 1));
+    }
+    if (m_headingLabel) {
+        m_headingLabel->setText(QString("Heading: %1°").arg(heading, 0, 'f', 1));
+    }
 }
 
 void NavigationMainWindow::onRouteCalculated(const Route& route)
 {
+    // Re-enable calculate button
     m_calculateButton->setEnabled(true);
-    m_statusLabel->setText("Route calculated successfully");
     
-    m_logTextEdit->append(QString("Route calculated: %1 waypoints, %2 km, %3 minutes")
-                         .arg(route.node_count)
-                         .arg(route.total_distance_meters / 1000.0, 0, 'f', 1)
-                         .arg(route.estimated_time_seconds / 60.0, 0, 'f', 1));
+    if (route.node_count == 0) {
+        statusBar()->showMessage("Error: Route calculation returned empty route", 5000);
+        return;
+    }
     
-    updateRouteInfo();
+    // For simple display, create a straight line from start to end point
+    std::vector<Point> routePoints;
+    routePoints.push_back(m_startPoint);
     
-    // Enable simulation
-    m_startSimButton->setEnabled(true);
+    // Add intermediate points for smoother line visualization
+    for (int i = 1; i <= 10; ++i) {
+        double ratio = i / 10.0;
+        double lat = m_startPoint.latitude + (m_endPoint.latitude - m_startPoint.latitude) * ratio;
+        double lon = m_startPoint.longitude + (m_endPoint.longitude - m_startPoint.longitude) * ratio;
+        routePoints.push_back(Point(lat, lon));
+    }
+    
+    // Display route on map
+    MapWidget* mapWidget = qobject_cast<MapWidget*>(m_mapRenderer);
+    if (mapWidget) {
+        // Set start and end points
+        mapWidget->setStartPoint(m_startPoint);
+        mapWidget->setEndPoint(m_endPoint);
+        
+        // Set the calculated route
+        mapWidget->setRoute(routePoints);
+        
+        // Center map to show route
+        double centerLat = (m_startPoint.latitude + m_endPoint.latitude) / 2.0;
+        double centerLon = (m_startPoint.longitude + m_endPoint.longitude) / 2.0;
+        mapWidget->centerMap(centerLat, centerLon);
+        
+        qDebug() << "Route displayed on map with" << routePoints.size() << "points";
+    }
+    
+    // Use route statistics from the Route object
+    double totalDistance = route.total_distance_meters / 1000.0; // Convert meters to km
+    double estimatedTime = route.estimated_time_seconds / 3600.0; // Convert seconds to hours
+    
+    // Update UI
+    m_totalDistanceLabel->setText(QString("Total Distance: %1 km").arg(totalDistance, 0, 'f', 2));
+    m_totalTimeLabel->setText(QString("Estimated Time: %1 hours").arg(estimatedTime, 0, 'f', 1));
+    m_remainingDistanceLabel->setText(QString("Remaining: %1 km").arg(totalDistance, 0, 'f', 2));
+    
+    statusBar()->showMessage(QString("Route calculated: %1 km, %2 nodes")
+                           .arg(totalDistance, 0, 'f', 2)
+                           .arg(route.node_count), 10000);
+    
+    // Enable start guidance button
+    if (m_startSimButton) {
+        m_startSimButton->setEnabled(true);
+    }
+    
+    qDebug() << "Route calculated:" << totalDistance << "km with" << route.node_count << "nodes";
 }
 
 void NavigationMainWindow::onGuidanceUpdated(const GuidanceInstruction& instruction)
 {
-    updateGuidanceDisplay();
+    if (m_instructionLabel) {
+        m_instructionLabel->setText(QString("Instruction: %1").arg(QString::fromStdString(instruction.instruction_text)));
+    }
+    if (m_distanceLabel) {
+        m_distanceLabel->setText(QString("Distance: %1 m").arg(instruction.distance_to_turn_meters));
+    }
 }
 
 void NavigationMainWindow::onMapClicked(const Point& position)
 {
-    // Set as end point when shift-clicked
-    QApplication *app = qobject_cast<QApplication*>(QApplication::instance());
-    if (app && (app->keyboardModifiers() & Qt::ShiftModifier)) {
-        m_endLatEdit->setText(QString::number(position.latitude, 'f', 6));
-        m_endLonEdit->setText(QString::number(position.longitude, 'f', 6));
-        m_logTextEdit->append(QString("End point set to (%1, %2)")
-                             .arg(position.latitude, 0, 'f', 6)
-                             .arg(position.longitude, 0, 'f', 6));
-    } else {
-        // Set as start point on normal click
-        m_startLatEdit->setText(QString::number(position.latitude, 'f', 6));
-        m_startLonEdit->setText(QString::number(position.longitude, 'f', 6));
-        m_logTextEdit->append(QString("Start point set to (%1, %2)")
-                             .arg(position.latitude, 0, 'f', 6)
-                             .arg(position.longitude, 0, 'f', 6));
-    }
+    qDebug() << "Map clicked at" << position.latitude << "," << position.longitude;
 }
 
 void NavigationMainWindow::onSimulationSpeedChanged(int speed)
 {
-    m_speedLabel->setText(QString("%1x").arg(speed));
-    m_navController->setSimulationSpeed(speed);
+    qDebug() << "Simulation speed changed to" << speed;
+}
+
+void NavigationMainWindow::onSpeedChanged(int speed)
+{
+    qDebug() << "Manual speed changed to" << speed;
+    m_speedLabel->setText(QString("Speed: %1 km/h").arg(speed));
+    m_speedValueLabel->setText(QString("Speed: %1 km/h").arg(speed));
+    statusBar()->showMessage(QString("Speed set to %1 km/h").arg(speed), 2000);
+}
+
+void NavigationMainWindow::onHeadingChanged(int heading)
+{
+    qDebug() << "Manual heading changed to" << heading;
+    m_headingSliderLabel->setText(QString("Heading: %1°").arg(heading));
+    m_headingLabel->setText(QString("Heading: %1°").arg(heading));
+    statusBar()->showMessage(QString("Heading set to %1°").arg(heading), 2000);
+}
+
+void NavigationMainWindow::setupGuidanceControlPanel()
+{
+    // Guidance Control Panel
+    QGroupBox *guidanceGroup = new QGroupBox("Navigation Guidance");
+    QVBoxLayout *guidanceLayout = new QVBoxLayout(guidanceGroup);
+    
+    // Start/Stop Guidance buttons
+    QHBoxLayout *guidanceButtonLayout = new QHBoxLayout();
+    
+    m_startSimButton = new QPushButton("Start Guidance");
+    m_startSimButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; }");
+    m_startSimButton->setEnabled(false); // Disabled until route is calculated
+    
+    m_stopSimButton = new QPushButton("Stop Guidance");
+    m_stopSimButton->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 8px; }");
+    m_stopSimButton->setEnabled(false); // Disabled until guidance starts
+    
+    guidanceButtonLayout->addWidget(m_startSimButton);
+    guidanceButtonLayout->addWidget(m_stopSimButton);
+    guidanceLayout->addLayout(guidanceButtonLayout);
+    
+    // Guidance Information
+    QLabel *guidanceInfoLabel = new QLabel("Guidance Information:");
+    guidanceLayout->addWidget(guidanceInfoLabel);
+    
+    m_instructionLabel = new QLabel("No active guidance");
+    m_instructionLabel->setWordWrap(true);
+    m_instructionLabel->setStyleSheet("QLabel { border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; }");
+    m_instructionLabel->setMinimumHeight(60);
+    guidanceLayout->addWidget(m_instructionLabel);
+    
+    m_distanceLabel = new QLabel("Distance to next turn: --");
+    guidanceLayout->addWidget(m_distanceLabel);
+    
+    // Auto heading checkbox
+    QCheckBox *autoHeadingCheckbox = new QCheckBox("Auto-adjust heading to destination");
+    autoHeadingCheckbox->setChecked(true);
+    guidanceLayout->addWidget(autoHeadingCheckbox);
+    
+    // Connect signals
+    connect(m_startSimButton, &QPushButton::clicked, this, &NavigationMainWindow::onStartGuidance);
+    connect(m_stopSimButton, &QPushButton::clicked, this, &NavigationMainWindow::onStopGuidance);
+    connect(autoHeadingCheckbox, &QCheckBox::toggled, this, &NavigationMainWindow::onAutoHeadingToggled);
+    
+    m_autoHeadingEnabled = true; // Store auto heading state
+    
+    // Add to main layout
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(m_centralWidget->layout());
+    if (mainLayout) {
+        mainLayout->addWidget(guidanceGroup);
+    }
 }
 
 void NavigationMainWindow::onSetStartPoint()
 {
-    Point currentPos = m_navController->getCurrentPosition();
-    m_startLatEdit->setText(QString::number(currentPos.latitude, 'f', 6));
-    m_startLonEdit->setText(QString::number(currentPos.longitude, 'f', 6));
+    qDebug() << "Set start point to current position";
     
-    m_logTextEdit->append(QString("Start point set to current position (%1, %2)")
-                         .arg(currentPos.latitude, 0, 'f', 6)
-                         .arg(currentPos.longitude, 0, 'f', 6));
+    // Get current position from labels
+    QString latText = m_latitudeLabel->text();
+    QString lonText = m_longitudeLabel->text();
+    
+    // Extract coordinates from labels
+    if (latText.contains(":") && lonText.contains(":")) {
+        bool ok1, ok2;
+        double lat = latText.split(":")[1].trimmed().toDouble(&ok1);
+        double lon = lonText.split(":")[1].trimmed().toDouble(&ok2);
+        
+        if (ok1 && ok2) {
+            m_startLatEdit->setText(QString::number(lat, 'f', 6));
+            m_startLonEdit->setText(QString::number(lon, 'f', 6));
+            statusBar()->showMessage("Start point set to current position", 3000);
+        } else {
+            statusBar()->showMessage("Please get current position first", 3000);
+        }
+    } else {
+        statusBar()->showMessage("Please get current position first", 3000);
+    }
 }
 
 void NavigationMainWindow::onSetEndPoint()
 {
-    // This could be implemented for setting end point to current position
+    qDebug() << "Set end point requested";
+}
+
+void NavigationMainWindow::onGetCurrentPosition()
+{
+    qDebug() << "Getting current position...";
+    
+    // For demo, use default position (Hanoi, Vietnam)
+    // In real implementation, this would get GPS coordinates
+    double currentLat = 21.028511;
+    double currentLon = 105.804817;
+    double currentSpeed = 0.0;
+    double currentHeading = 0.0;
+    
+    // Update labels
+    m_latitudeLabel->setText(QString("Latitude: %1").arg(currentLat, 0, 'f', 6));
+    m_longitudeLabel->setText(QString("Longitude: %1").arg(currentLon, 0, 'f', 6));
+    m_speedValueLabel->setText(QString("Speed: %1 km/h").arg(currentSpeed, 0, 'f', 1));
+    m_headingLabel->setText(QString("Heading: %1°").arg(currentHeading, 0, 'f', 1));
+    
+    // Show current position on map
+    MapWidget* mapWidget = qobject_cast<MapWidget*>(m_mapRenderer);
+    if (mapWidget) {
+        Point currentPos(currentLat, currentLon);
+        mapWidget->setCurrentPosition(currentPos);
+        mapWidget->centerMap(currentLat, currentLon);
+        qDebug() << "Current position displayed on map";
+    }
+    
+    statusBar()->showMessage("Current position updated", 3000);
+}
+
+void NavigationMainWindow::setupManualControlPanel()
+{
+    // Manual Control Panel
+    QGroupBox *controlGroup = new QGroupBox("Manual Control");
+    QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
+    
+    // Speed Control
+    QLabel *speedLabel = new QLabel("Speed Control:");
+    controlLayout->addWidget(speedLabel);
+    
+    m_speedSlider = new QSlider(Qt::Horizontal);
+    m_speedSlider->setRange(0, 120); // 0-120 km/h
+    m_speedSlider->setValue(0);
+    m_speedSlider->setTickPosition(QSlider::TicksBelow);
+    m_speedSlider->setTickInterval(20);
+    controlLayout->addWidget(m_speedSlider);
+    
+    m_speedLabel = new QLabel("Speed: 0 km/h");
+    controlLayout->addWidget(m_speedLabel);
+    
+    // Heading Control
+    QLabel *headingLabel = new QLabel("Heading Control:");
+    controlLayout->addWidget(headingLabel);
+    
+    m_headingSlider = new QSlider(Qt::Horizontal);
+    m_headingSlider->setRange(0, 359); // 0-359 degrees
+    m_headingSlider->setValue(0);
+    m_headingSlider->setTickPosition(QSlider::TicksBelow);
+    m_headingSlider->setTickInterval(45);
+    controlLayout->addWidget(m_headingSlider);
+    
+    m_headingSliderLabel = new QLabel("Heading: 0°");
+    controlLayout->addWidget(m_headingSliderLabel);
+    
+    // Connect sliders
+    connect(m_speedSlider, &QSlider::valueChanged, this, &NavigationMainWindow::onSpeedChanged);
+    connect(m_headingSlider, &QSlider::valueChanged, this, &NavigationMainWindow::onHeadingChanged);
+    
+    // Add to main layout
+    QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(m_centralWidget->layout());
+    if (mainLayout) {
+        mainLayout->addWidget(controlGroup);
+    }
+    
+    // Add Guidance Control Panel
+    setupGuidanceControlPanel();
+}
 }
 
 void NavigationMainWindow::updateStatusBar()
 {
-    Point pos = m_navController->getCurrentPosition();
-    m_statusLabel->setText(QString("Position: %1, %2")
-                          .arg(pos.latitude, 0, 'f', 6)
-                          .arg(pos.longitude, 0, 'f', 6));
+    statusBar()->showMessage(QString("Last updated: %1").arg(QDateTime::currentDateTime().toString()));
 }
 
 void NavigationMainWindow::updatePositionDisplay()
 {
-    Point pos = m_navController->getCurrentPosition();
-    m_latitudeLabel->setText(QString::number(pos.latitude, 'f', 6));
-    m_longitudeLabel->setText(QString::number(pos.longitude, 'f', 6));
-    
-    // These would be updated with real data
-    m_speedValueLabel->setText("50 km/h");
-    m_headingLabel->setText("45°");
+    // Implementation for updating position display
 }
 
 void NavigationMainWindow::updateGuidanceDisplay()
 {
-    if (m_navController->hasActiveRoute()) {
-        GuidanceInstruction instruction = m_navController->getCurrentGuidance();
-        m_instructionLabel->setText(QString::fromUtf8(instruction.instruction_text));
-        m_distanceLabel->setText(QString("Distance: %1 m").arg(instruction.distance_to_turn_meters, 0, 'f', 0));
-        m_timeLabel->setText("Time: 2 min");  // Placeholder
-    } else {
-        m_instructionLabel->setText("No active guidance");
-        m_distanceLabel->setText("Distance: -");
-        m_timeLabel->setText("Time: -");
-    }
+    // Implementation for updating guidance display
 }
 
 void NavigationMainWindow::updateRouteInfo()
 {
-    if (m_navController->hasActiveRoute()) {
-        const Route& route = m_navController->getActiveRoute();
-        m_totalDistanceLabel->setText(NavUtils::formatDistance(route.total_distance_meters).c_str());
-        m_totalTimeLabel->setText(NavUtils::formatTime(route.estimated_time_seconds).c_str());
-        m_remainingDistanceLabel->setText(NavUtils::formatDistance(route.total_distance_meters).c_str());
-        m_remainingTimeLabel->setText(NavUtils::formatTime(route.estimated_time_seconds).c_str());
-    } else {
-        m_totalDistanceLabel->setText("-");
-        m_totalTimeLabel->setText("-");
-        m_remainingDistanceLabel->setText("-");
-        m_remainingTimeLabel->setText("-");
-    }
+    // Implementation for updating route info
 }
 
 void NavigationMainWindow::updateServiceStatus()
 {
-    if (!m_navController) {
-        return;
-    }
-    
-    // Update mode display
-    NavigationController::OperationMode mode = m_navController->getOperationMode();
-    if (mode == NavigationController::SERVICE_MODE) {
-        m_serviceModeLabel->setText("Service Mode");
-        m_serviceModeLabel->setStyleSheet("font-weight: bold; color: green;");
-        m_toggleModeButton->setText("Switch to Simulation Mode");
-    } else {
-        m_serviceModeLabel->setText("Simulation Mode");
-        m_serviceModeLabel->setStyleSheet("font-weight: bold; color: blue;");
-        m_toggleModeButton->setText("Switch to Service Mode");
-    }
-    
-    // Update service status
-    std::string status = m_navController->getServiceStatus();
-    m_serviceStatusText->setPlainText(QString::fromStdString(status));
-    
-    // Update connection status in log
-    bool connected = m_navController->areServicesConnected();
-    if (connected) {
-        m_logTextEdit->append("✓ All services connected");
-    } else {
-        m_logTextEdit->append("⚠ Some services disconnected - using simulation fallback");
-    }
+    // Implementation for updating service status
 }
 
 void NavigationMainWindow::onServiceModeChanged()
 {
-    if (!m_navController) {
+    qDebug() << "Service mode changed";
+}
+
+// Helper function to calculate distance between two coordinates (Haversine formula)
+double NavigationMainWindow::calculateDistance(double lat1, double lon1, double lat2, double lon2)
+{
+    const double R = 6371.0; // Earth's radius in kilometers
+    
+    // Convert degrees to radians
+    double lat1_rad = lat1 * M_PI / 180.0;
+    double lon1_rad = lon1 * M_PI / 180.0;
+    double lat2_rad = lat2 * M_PI / 180.0;
+    double lon2_rad = lon2 * M_PI / 180.0;
+    
+    // Haversine formula
+    double dlat = lat2_rad - lat1_rad;
+    double dlon = lon2_rad - lon1_rad;
+    
+    double a = sin(dlat/2) * sin(dlat/2) + 
+               cos(lat1_rad) * cos(lat2_rad) * 
+               sin(dlon/2) * sin(dlon/2);
+    double c = 2 * atan2(sqrt(a), sqrt(1-a));
+    
+    return R * c; // Distance in kilometers
+}
+
+// Helper function to calculate bearing between two coordinates
+double NavigationMainWindow::calculateBearing(double lat1, double lon1, double lat2, double lon2)
+{
+    // Convert degrees to radians
+    double lat1_rad = lat1 * M_PI / 180.0;
+    double lon1_rad = lon1 * M_PI / 180.0;
+    double lat2_rad = lat2 * M_PI / 180.0;
+    double lon2_rad = lon2 * M_PI / 180.0;
+    
+    double dlon = lon2_rad - lon1_rad;
+    
+    double y = sin(dlon) * cos(lat2_rad);
+    double x = cos(lat1_rad) * sin(lat2_rad) - sin(lat1_rad) * cos(lat2_rad) * cos(dlon);
+    
+    double bearing_rad = atan2(y, x);
+    double bearing_deg = bearing_rad * 180.0 / M_PI;
+    
+    // Normalize to 0-360 degrees
+    bearing_deg = fmod(bearing_deg + 360.0, 360.0);
+    
+    return bearing_deg;
+}
+
+void NavigationMainWindow::onStartGuidance()
+{
+    qDebug() << "Starting guidance...";
+    
+    if (!m_hasStartPoint || !m_hasEndPoint) {
+        statusBar()->showMessage("Please calculate a route first", 3000);
         return;
     }
     
-    NavigationController::OperationMode currentMode = m_navController->getOperationMode();
-    NavigationController::OperationMode newMode;
+    // Start guidance simulation
+    m_simulationRunning = true;
+    m_startSimButton->setEnabled(false);
+    m_stopSimButton->setEnabled(true);
     
-    if (currentMode == NavigationController::SERVICE_MODE) {
-        newMode = NavigationController::SIMULATION_MODE;
-        m_logTextEdit->append("Switching to simulation mode");
-    } else {
-        if (m_navController->areServicesConnected()) {
-            newMode = NavigationController::SERVICE_MODE;
-            m_logTextEdit->append("Switching to service mode");
-        } else {
-            QMessageBox::warning(this, "Service Mode", 
-                "Cannot switch to service mode: services are not available.\n"
-                "Please start the backend services first.");
-            return;
-        }
+    // If auto-heading is enabled, calculate heading to destination
+    if (m_autoHeadingEnabled) {
+        double currentLat = m_startPoint.latitude;
+        double currentLon = m_startPoint.longitude;
+        double destLat = m_endPoint.latitude;
+        double destLon = m_endPoint.longitude;
+        
+        // Calculate bearing to destination
+        double bearing = calculateBearing(currentLat, currentLon, destLat, destLon);
+        
+        // Update heading slider and display
+        m_headingSlider->setValue((int)bearing);
+        m_headingSliderLabel->setText(QString("Heading: %1°").arg(bearing, 0, 'f', 0));
+        m_headingLabel->setText(QString("Heading: %1°").arg(bearing, 0, 'f', 0));
     }
     
-    m_navController->setOperationMode(newMode);
-    updateServiceStatus();
+    // Update guidance display
+    m_instructionLabel->setText("Following route to destination...");
+    double distance = calculateDistance(m_startPoint.latitude, m_startPoint.longitude, 
+                                      m_endPoint.latitude, m_endPoint.longitude);
+    m_distanceLabel->setText(QString("Distance to destination: %1 km").arg(distance, 0, 'f', 2));
+    
+    statusBar()->showMessage("Guidance started", 3000);
+    qDebug() << "Guidance started with auto-heading";
+}
+
+void NavigationMainWindow::onStopGuidance()
+{
+    qDebug() << "Stopping guidance...";
+    
+    m_simulationRunning = false;
+    m_startSimButton->setEnabled(true);
+    m_stopSimButton->setEnabled(false);
+    
+    // Reset guidance display
+    m_instructionLabel->setText("No active guidance");
+    m_distanceLabel->setText("Distance to next turn: --");
+    
+    statusBar()->showMessage("Guidance stopped", 3000);
+    qDebug() << "Guidance stopped";
+}
+
+void NavigationMainWindow::onAutoHeadingToggled(bool enabled)
+{
+    m_autoHeadingEnabled = enabled;
+    qDebug() << "Auto-heading" << (enabled ? "enabled" : "disabled");
+    
+    if (enabled && m_simulationRunning && m_hasStartPoint && m_hasEndPoint) {
+        // Recalculate heading to destination
+        double bearing = calculateBearing(m_startPoint.latitude, m_startPoint.longitude, 
+                                        m_endPoint.latitude, m_endPoint.longitude);
+        m_headingSlider->setValue((int)bearing);
+        statusBar()->showMessage("Auto-heading enabled", 2000);
+    } else {
+        statusBar()->showMessage("Auto-heading disabled", 2000);
+    }
 }
 
 } // namespace nav

@@ -1,5 +1,6 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
 #include <cstdint>
 #include <cmath>
 
@@ -110,12 +111,13 @@ struct MapEdge {
 struct Route {
     static constexpr int MAX_NODES = 1024;
     
+    uint32_t route_id;
     uint32_t nodes[MAX_NODES];
     int node_count;
     double total_distance_meters;
     double estimated_time_seconds;
     
-    Route() : node_count(0), total_distance_meters(0.0), estimated_time_seconds(0.0) {
+    Route() : route_id(0), node_count(0), total_distance_meters(0.0), estimated_time_seconds(0.0) {
         for (int i = 0; i < MAX_NODES; ++i) {
             nodes[i] = 0;
         }
@@ -143,6 +145,12 @@ struct GuidanceInstruction {
     uint32_t target_node_id;
     double distance_to_turn_meters;
     char instruction_text[256];  // "Turn left in 200 meters"
+    
+    // Constants for backward compatibility
+    static constexpr TurnType STRAIGHT = TurnType::STRAIGHT;
+    static constexpr TurnType TURN_RIGHT = TurnType::RIGHT;
+    static constexpr TurnType TURN_LEFT = TurnType::LEFT;
+    static constexpr TurnType DESTINATION = TurnType::DESTINATION_REACHED;
     
     GuidanceInstruction() : turn_type(TurnType::STRAIGHT), target_node_id(0),
                            distance_to_turn_meters(0.0) {

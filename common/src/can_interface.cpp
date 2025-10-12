@@ -1,15 +1,32 @@
 #include "nav_utils.h"
 #include <cstring>
-#include <unistd.h>
+#include <cstdlib>
+#include <iostream>
 
 #ifdef __QNX__
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/can.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#include <sys/socket.h>
+#include <linux/can.h>
+#include <linux/can/raw.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 #else
-// For non-QNX systems (simulation/testing)
+// For Windows and other systems (simulation/testing)
 #include <iostream>
+#ifdef _WIN32
+#include <io.h>
+// Windows doesn't have these Unix functions, we'll use simulation mode
+#else
+#include <unistd.h>
+#endif
 #endif
 
 namespace nav {
@@ -22,7 +39,7 @@ CanInterface::~CanInterface() {
 }
 
 bool CanInterface::initialize(const std::string& can_device) {
-#ifdef __QNX__
+#if defined(__QNX__) || defined(__linux__)
     // Create CAN socket
     can_socket_ = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (can_socket_ < 0) {
@@ -57,7 +74,7 @@ bool CanInterface::initialize(const std::string& can_device) {
     is_initialized_ = true;
     return true;
 #else
-    // Simulation mode for non-QNX systems
+    // Simulation mode for Windows and other systems
     std::cout << "CAN Interface initialized in simulation mode on " << can_device << std::endl;
     can_socket_ = 1; // Fake socket
     is_initialized_ = true;
@@ -67,8 +84,11 @@ bool CanInterface::initialize(const std::string& can_device) {
 
 void CanInterface::close() {
     if (can_socket_ >= 0) {
-#ifdef __QNX__
+#if defined(__QNX__) || defined(__linux__)
         ::close(can_socket_);
+#elif defined(_WIN32)
+        // Windows simulation mode - just reset the socket
+        // In real Windows CAN implementation, you'd close the actual handle here
 #endif
         can_socket_ = -1;
     }
@@ -80,7 +100,7 @@ bool CanInterface::readVehicleData(VehicleData& vehicle_data) {
         return false;
     }
     
-#ifdef __QNX__
+#if defined(__QNX__) || defined(__linux__)
     struct can_frame frame;
     ssize_t nbytes = read(can_socket_, &frame, sizeof(frame));
     
@@ -137,7 +157,7 @@ bool CanInterface::sendGuidanceData(const GuidanceInstruction& instruction) {
         return false;
     }
     
-#ifdef __QNX__
+#if defined(__QNX__) || defined(__linux__)
     struct can_frame frame;
     frame.can_id = GUIDANCE_MSG_ID;
     frame.can_dlc = 8;
