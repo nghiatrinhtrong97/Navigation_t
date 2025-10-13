@@ -2,6 +2,17 @@
 #include <QDebug>
 #include <cmath>
 #include <cstring>
+#include <cstdio>
+
+// Cross-platform safe string copy
+#ifdef _WIN32
+#define SAFE_STRCPY(dest, size, src) strcpy_s(dest, size, src)
+#else
+#define SAFE_STRCPY(dest, size, src) do { \
+    strncpy(dest, src, size - 1); \
+    dest[size - 1] = '\0'; \
+} while(0)
+#endif
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -28,7 +39,7 @@ GuidanceServiceCore::GuidanceServiceCore(QObject* parent)
     m_currentInstruction.turn_type = TurnType::STRAIGHT;
     m_currentInstruction.target_node_id = 0;
     m_currentInstruction.distance_to_turn_meters = 0.0;
-    strcpy_s(m_currentInstruction.instruction_text, sizeof(m_currentInstruction.instruction_text), "No guidance");
+    SAFE_STRCPY(m_currentInstruction.instruction_text, sizeof(m_currentInstruction.instruction_text), "No guidance");
 }
 
 GuidanceServiceCore::~GuidanceServiceCore()
@@ -115,7 +126,7 @@ bool GuidanceServiceCore::startGuidance(const Route& route)
     instruction.turn_type = TurnType::STRAIGHT;
     instruction.target_node_id = 0;
     instruction.distance_to_turn_meters = 0.0;
-    strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Starting navigation - proceed to route");
+    SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Starting navigation - proceed to route");
     
     m_currentInstruction = instruction;
     
@@ -149,7 +160,7 @@ bool GuidanceServiceCore::stopGuidance()
     m_currentInstruction.turn_type = TurnType::STRAIGHT;
     m_currentInstruction.target_node_id = 0;
     m_currentInstruction.distance_to_turn_meters = 0.0;
-    strcpy_s(m_currentInstruction.instruction_text, sizeof(m_currentInstruction.instruction_text), "Navigation stopped");
+    SAFE_STRCPY(m_currentInstruction.instruction_text, sizeof(m_currentInstruction.instruction_text), "Navigation stopped");
     
     qDebug() << "✅ [GUIDANCE SERVICE CORE] Guidance stopped";
     return true;
@@ -220,7 +231,7 @@ void GuidanceServiceCore::updateGuidanceFromPosition()
         instruction.turn_type = TurnType::DESTINATION_REACHED;
         instruction.target_node_id = 0;
         instruction.distance_to_turn_meters = 0.0;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Destination reached");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Destination reached");
         
         m_currentInstruction = instruction;
         m_distanceToNextManeuver = 0.0;
@@ -253,27 +264,27 @@ GuidanceInstruction GuidanceServiceCore::generateInstruction(double progressMete
     // Simple instruction generation based on progress
     if (progressRatio < 0.1) {
         instruction.turn_type = TurnType::STRAIGHT;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Continue straight");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Continue straight");
         instruction.distance_to_turn_meters = totalDistance * 0.1 - progressMeters;
     } else if (progressRatio < 0.3) {
         instruction.turn_type = TurnType::RIGHT;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Turn right in 500 meters");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Turn right in 500 meters");
         instruction.distance_to_turn_meters = totalDistance * 0.3 - progressMeters;
     } else if (progressRatio < 0.5) {
         instruction.turn_type = TurnType::STRAIGHT;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Continue straight");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Continue straight");
         instruction.distance_to_turn_meters = totalDistance * 0.5 - progressMeters;
     } else if (progressRatio < 0.7) {
         instruction.turn_type = TurnType::LEFT;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Turn left in 300 meters");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Turn left in 300 meters");
         instruction.distance_to_turn_meters = totalDistance * 0.7 - progressMeters;
     } else if (progressRatio < 0.9) {
         instruction.turn_type = TurnType::STRAIGHT;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Continue straight");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Continue straight");
         instruction.distance_to_turn_meters = totalDistance * 0.9 - progressMeters;
     } else {
         instruction.turn_type = TurnType::DESTINATION_REACHED;
-        strcpy_s(instruction.instruction_text, sizeof(instruction.instruction_text), "Approaching destination");
+        SAFE_STRCPY(instruction.instruction_text, sizeof(instruction.instruction_text), "Approaching destination");
         instruction.distance_to_turn_meters = totalDistance - progressMeters;
     }
     
@@ -293,9 +304,9 @@ double GuidanceServiceCore::calculateDistance(const Point& p1, const Point& p2) 
     double dlat = (p2.latitude - p1.latitude) * M_PI / 180.0;
     double dlon = (p2.longitude - p1.longitude) * M_PI / 180.0;
     
-    double a = sin(dlat/2) * sin(dlat/2) +
-               cos(lat1_rad) * cos(lat2_rad) * sin(dlon/2) * sin(dlon/2);
-    double c = 2 * atan2(sqrt(a), sqrt(1-a));
+    double a = std::sin(dlat/2) * std::sin(dlat/2) +
+               std::cos(lat1_rad) * std::cos(lat2_rad) * std::sin(dlon/2) * std::sin(dlon/2);
+    double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1-a));
     
     return R * c;
 }
@@ -306,14 +317,14 @@ double GuidanceServiceCore::calculateBearing(const Point& from, const Point& to)
     double lat2_rad = to.latitude * M_PI / 180.0;
     double dlon_rad = (to.longitude - from.longitude) * M_PI / 180.0;
     
-    double y = sin(dlon_rad) * cos(lat2_rad);
-    double x = cos(lat1_rad) * sin(lat2_rad) - sin(lat1_rad) * cos(lat2_rad) * cos(dlon_rad);
+    double y = std::sin(dlon_rad) * std::cos(lat2_rad);
+    double x = std::cos(lat1_rad) * std::sin(lat2_rad) - std::sin(lat1_rad) * std::cos(lat2_rad) * std::cos(dlon_rad);
     
-    double bearing_rad = atan2(y, x);
+    double bearing_rad = std::atan2(y, x);
     double bearing_deg = bearing_rad * 180.0 / M_PI;
     
     // Normalize to 0-360 degrees
-    return fmod(bearing_deg + 360.0, 360.0);
+    return std::fmod(bearing_deg + 360.0, 360.0);
 }
 
 } // namespace nav

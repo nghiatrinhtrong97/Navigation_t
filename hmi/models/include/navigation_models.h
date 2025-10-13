@@ -14,7 +14,7 @@
 #include <QVariant>
 #include <vector>
 #include <memory>
-#include "../common/include/nav_types.h"
+#include "../../common/include/nav_types.h"
 
 namespace nav {
 

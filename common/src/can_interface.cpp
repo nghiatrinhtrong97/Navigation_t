@@ -158,22 +158,26 @@ bool CanInterface::sendGuidanceData(const GuidanceInstruction& instruction) {
     }
     
 #if defined(__QNX__) || defined(__linux__)
-    struct can_frame frame;
-    frame.can_id = GUIDANCE_MSG_ID;
-    frame.can_dlc = 8;
+    // struct can_frame frame;
+    // frame.can_id = GUIDANCE_MSG_ID;
+    // frame.can_dlc = 8;
     
-    // Pack guidance data into CAN frame
-    frame.data[0] = static_cast<uint8_t>(instruction.turn_type);
-    frame.data[1] = static_cast<uint8_t>(instruction.distance_to_turn_meters >> 8);
-    frame.data[2] = static_cast<uint8_t>(instruction.distance_to_turn_meters & 0xFF);
-    frame.data[3] = static_cast<uint8_t>(instruction.target_node_id >> 24);
-    frame.data[4] = static_cast<uint8_t>(instruction.target_node_id >> 16);
-    frame.data[5] = static_cast<uint8_t>(instruction.target_node_id >> 8);
-    frame.data[6] = static_cast<uint8_t>(instruction.target_node_id & 0xFF);
-    frame.data[7] = 0; // Reserved
+    // // Pack guidance data into CAN frame
+    // frame.data[0] = static_cast<uint8_t>(instruction.turn_type);
+    // frame.data[1] = static_cast<uint8_t>(instruction.distance_to_turn_meters >> 8);
+    // frame.data[2] = static_cast<uint8_t>(instruction.distance_to_turn_meters & 0xFF);
+    // frame.data[3] = static_cast<uint8_t>(instruction.target_node_id >> 24);
+    // frame.data[4] = static_cast<uint8_t>(instruction.target_node_id >> 16);
+    // frame.data[5] = static_cast<uint8_t>(instruction.target_node_id >> 8);
+    // frame.data[6] = static_cast<uint8_t>(instruction.target_node_id & 0xFF);
+    // frame.data[7] = 0; // Reserved
     
-    ssize_t nbytes = write(can_socket_, &frame, sizeof(frame));
-    return nbytes == sizeof(frame);
+    // ssize_t nbytes = write(can_socket_, &frame, sizeof(frame));
+    // return nbytes == sizeof(frame);
+    // Simulation mode
+    std::cout << "CAN TX: " << NavUtils::turnTypeToString(instruction.turn_type)
+              << " in " << instruction.distance_to_turn_meters << "m" << std::endl;
+    return true;
 #else
     // Simulation mode
     std::cout << "CAN TX: " << NavUtils::turnTypeToString(instruction.turn_type) 

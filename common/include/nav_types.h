@@ -1,8 +1,11 @@
 #pragma once
 
-#define _USE_MATH_DEFINES
 #include <cstdint>
 #include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace nav {
 
@@ -21,10 +24,10 @@ struct Point {
         const double R = 6371000.0; // Earth radius in meters
         const double dLat = (other.latitude - latitude) * M_PI / 180.0;
         const double dLon = (other.longitude - longitude) * M_PI / 180.0;
-        const double a = sin(dLat/2) * sin(dLat/2) +
-                        cos(latitude * M_PI / 180.0) * cos(other.latitude * M_PI / 180.0) *
-                        sin(dLon/2) * sin(dLon/2);
-        const double c = 2 * atan2(sqrt(a), sqrt(1-a));
+        const double a = std::sin(dLat/2) * std::sin(dLat/2) +
+                        std::cos(latitude * M_PI / 180.0) * std::cos(other.latitude * M_PI / 180.0) *
+                        std::sin(dLon/2) * std::sin(dLon/2);
+        const double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1-a));
         return R * c;
     }
     
@@ -34,11 +37,11 @@ struct Point {
         const double lat1 = latitude * M_PI / 180.0;
         const double lat2 = other.latitude * M_PI / 180.0;
         
-        const double y = sin(dLon) * cos(lat2);
-        const double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+        const double y = std::sin(dLon) * std::cos(lat2);
+        const double x = std::cos(lat1) * std::sin(lat2) - std::sin(lat1) * std::cos(lat2) * std::cos(dLon);
         
-        double bearing = atan2(y, x) * 180.0 / M_PI;
-        return fmod(bearing + 360.0, 360.0);
+        double bearing = std::atan2(y, x) * 180.0 / M_PI;
+        return std::fmod(bearing + 360.0, 360.0);
     }
 };
 
