@@ -37,7 +37,8 @@
 #include "nav_types.h"
 #include "nav_messages.h"
 #include "nav_utils.h"
-#include "integrated_navigation_controller.h"
+#include "../../controllers/include/integrated_navigation_controller.h"
+#include "../../services/include/poi_service.h"
 #include "map_widget.h"
 #include "service_interfaces.h"
 
@@ -57,6 +58,7 @@ public:
     ~NavigationMainWindow();
 
 private slots:
+    //Needtodo
     void onCalculateRoute();
     void onClearRoute();
     void onStartSimulation();
@@ -78,6 +80,20 @@ private slots:
     void onSetClickedAsEndPoint();
     void onSimulationTimer();
     void onMousePositionChanged(const Point& position);
+    
+    // POI test panel slots
+    void onPOILoadData();
+    void onPOISearch();
+    void onPOINearbySearch();
+    void onGeocodeAddress();
+    void onPOIDataLoaded();
+    void onPOISearchCompleted(const std::vector<POI>& results);
+    void onAddressGeocoded(const GeocodingResult& result);
+    void onPOIResultSelected(int index);  // Handle POI selection from list
+    
+    // Panel collapse/expand slots
+    void onToggleLeftPanel();
+    void onToggleRightPanel();
 
 private:
     void setupUI();
@@ -88,6 +104,7 @@ private:
     void setupInfoPanel(QVBoxLayout* parentLayout = nullptr);
     void setupManualControlPanel(QVBoxLayout* parentLayout = nullptr);
     void setupGuidanceControlPanel(QVBoxLayout* parentLayout = nullptr);
+    void setupPOITestPanel(QVBoxLayout* parentLayout = nullptr);
     void createGuidancePopup();
     void showGuidancePopup();
     void hideGuidancePopup();
@@ -106,6 +123,7 @@ private:
     double calculateDistance(double lat1, double lon1, double lat2, double lon2);
     double calculateBearing(double lat1, double lon1, double lat2, double lon2);
     bool checkDestinationReached();
+    void showPOIOnMap(const POI& poi);  // Show selected POI on map
     
     // UI Components
     QWidget *m_centralWidget;
@@ -182,6 +200,21 @@ private:
     // Log display
     QTextEdit *m_logTextEdit;
     
+    // POI Test Panel
+    QGroupBox *m_poiTestGroup;
+    QLabel *m_poiStatusLabel;
+    QPushButton *m_poiLoadDataButton;
+    QLineEdit *m_poiSearchEdit;
+    QPushButton *m_poiSearchButton;
+    QComboBox *m_poiCategoryCombo;
+    QSpinBox *m_poiRadiusSpinBox;
+    QPushButton *m_poiNearbyButton;
+    QLineEdit *m_addressEdit;
+    QPushButton *m_geocodeButton;
+    QTextEdit *m_poiResultsText;
+    QListWidget *m_poiResultsList;  // List widget for clickable POI results
+    std::vector<POI> m_lastSearchResults;  // Store last search results
+    
     // Service control
     QGroupBox *m_serviceGroup;
     QLabel *m_serviceModeLabel;
@@ -196,6 +229,7 @@ private:
     
     // Backend components
     IntegratedNavigationController *m_navController;
+    POIService *m_poiService;
     
     // State
     Point m_startPoint;
@@ -223,6 +257,14 @@ private:
     // Last clicked position for context menu
     Point m_lastClickedPosition;
     bool m_hasLastClickedPosition;
+    
+    // Panel collapse state
+    QWidget *m_leftPanelContainer;
+    QWidget *m_rightPanelContainer;
+    QPushButton *m_toggleLeftPanelButton;
+    QPushButton *m_toggleRightPanelButton;
+    bool m_leftPanelCollapsed;
+    bool m_rightPanelCollapsed;
     
     // Static methods to get constants
     static double getDefaultLat() { return 21.028511; }  // Hanoi, Vietnam

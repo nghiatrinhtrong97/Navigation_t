@@ -72,6 +72,15 @@ private slots:
     void onStopGuidance();
     void onAutoHeadingToggled(bool enabled);
 
+    // POI Service Test Slots
+    void onPOISearch();
+    void onPOILoadData();
+    void onPOINearbySearch();
+    void onGeocodeAddress();
+    void onPOIDataLoaded(int count);
+    void onPOISearchCompleted(const std::vector<POI>& results);
+    void onAddressGeocoded(const GeocodingResult& result);
+
 private:
     void setupUI();
     void setupMenuBar();
@@ -167,6 +176,20 @@ private:
     bool m_hasEndPoint;
     bool m_simulationRunning;
     bool m_autoHeadingEnabled;
+
+    // POI Service Testing Components
+    QGroupBox* m_poiTestGroup;
+    QLineEdit* m_poiSearchEdit;
+    QPushButton* m_poiSearchButton;
+    QPushButton* m_poiLoadDataButton;
+    QPushButton* m_poiNearbyButton;
+    QComboBox* m_poiCategoryCombo;
+    QTextEdit* m_poiResultsText;
+    QLabel* m_poiStatusLabel;
+    QSpinBox* m_poiRadiusSpinBox;
+    QPushButton* m_geocodeButton;
+    QLineEdit* m_addressEdit;
+    std::unique_ptr<POIService> m_poiService;
     
     // Static methods to get constants
     static double getDefaultLat() { return 21.028511; }  // Hanoi, Vietnam

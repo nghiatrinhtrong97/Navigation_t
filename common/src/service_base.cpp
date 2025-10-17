@@ -94,15 +94,15 @@ bool ServiceBase::connectToParent(const QString& serverName)
     
     m_parentSocket->connectToServer(serverName);
     
-    qDebug() << "🔗 [SERVICE BASE] Waiting for connection (5 seconds timeout)...";
+    qDebug() << "[SERVICE BASE] Waiting for connection (5 seconds timeout)...";
     if (!m_parentSocket->waitForConnected(5000)) {
-        qWarning() << "❌ [SERVICE BASE] Failed to connect to parent:" << m_parentSocket->errorString();
-        qWarning() << "❌ [SERVICE BASE] Socket error:" << m_parentSocket->error();
-        qWarning() << "❌ [SERVICE BASE] Socket state:" << m_parentSocket->state();
+        qWarning() << "[SERVICE BASE] Failed to connect to parent:" << m_parentSocket->errorString();
+        qWarning() << "[SERVICE BASE] Socket error:" << m_parentSocket->error();
+        qWarning() << "[SERVICE BASE] Socket state:" << m_parentSocket->state();
         return false;
     }
     
-    qDebug() << "✅ [SERVICE BASE] Successfully connected to parent IPC server!";
+    qDebug() << "[SERVICE BASE] Successfully connected to parent IPC server!";
     return true;
 }
 

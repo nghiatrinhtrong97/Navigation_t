@@ -11,15 +11,16 @@ IntegratedNavigationController::IntegratedNavigationController(QObject *parent)
     , m_currentHeading(0.0)
     , m_currentSpeed(0.0)
 {
-    qDebug() << "🚀 [INTEGRATED CONTROLLER] Creating integrated navigation controller...";
+    qDebug() << "[INTEGRATED CONTROLLER] Creating integrated navigation controller...";
     
     // Create service cores
     m_positioningService = std::make_unique<PositioningServiceCore>(this);
     m_routingService = std::make_unique<RoutingServiceCore>(this);
     m_guidanceService = std::make_unique<GuidanceServiceCore>(this);
     m_mapService = std::make_unique<MapServiceCore>(this);
+    m_poiService = std::make_unique<POIService>(this);
     
-    qDebug() << "✅ [INTEGRATED CONTROLLER] Service cores created";
+    qDebug() << "[INTEGRATED CONTROLLER] Service cores created";
 }
 
 IntegratedNavigationController::~IntegratedNavigationController()
@@ -32,32 +33,37 @@ bool IntegratedNavigationController::initializeServices()
     QMutexLocker locker(&m_mutex);
     
     if (m_servicesInitialized) {
-        qDebug() << "⚠️ [INTEGRATED CONTROLLER] Services already initialized";
+        qDebug() << "[INTEGRATED CONTROLLER] Services already initialized";
         return true;
     }
     
-    qDebug() << "🚀 [INTEGRATED CONTROLLER] Initializing all service cores...";
+    qDebug() << "[INTEGRATED CONTROLLER] Initializing all service cores...";
     
     // Initialize all services
     bool allInitialized = true;
     
     if (!m_positioningService->initialize()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Failed to initialize positioning service";
+        qWarning() << "[INTEGRATED CONTROLLER] Failed to initialize positioning service";
         allInitialized = false;
     }
     
     if (!m_routingService->initialize()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Failed to initialize routing service";
+        qWarning() << "[INTEGRATED CONTROLLER] Failed to initialize routing service";
         allInitialized = false;
     }
     
     if (!m_guidanceService->initialize()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Failed to initialize guidance service";
+        qWarning() << "[INTEGRATED CONTROLLER] Failed to initialize guidance service";
         allInitialized = false;
     }
     
     if (!m_mapService->initialize()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Failed to initialize map service";
+        qWarning() << "[INTEGRATED CONTROLLER] Failed to initialize map service";
+        allInitialized = false;
+    }
+    
+    if (!m_poiService->initialize()) {
+        qWarning() << "[INTEGRATED CONTROLLER] Failed to initialize POI service";
         allInitialized = false;
     }
     
@@ -65,10 +71,10 @@ bool IntegratedNavigationController::initializeServices()
         connectServiceSignals();
         m_servicesInitialized = true;
         
-        qDebug() << "✅ [INTEGRATED CONTROLLER] All services initialized successfully";
+        qDebug() << "[INTEGRATED CONTROLLER] All services initialized successfully";
         emit servicesReady(true);
     } else {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Failed to initialize some services";
+        qWarning() << "[INTEGRATED CONTROLLER] Failed to initialize some services";
         emit servicesReady(false);
     }
     
@@ -131,13 +137,13 @@ void IntegratedNavigationController::shutdownServices()
     m_servicesInitialized = false;
     
     emit servicesReady(false);
-    qDebug() << "✅ [INTEGRATED CONTROLLER] All services shut down";
+    qDebug() << "[INTEGRATED CONTROLLER] All services shut down";
 }
 
 bool IntegratedNavigationController::calculateRoute(const Point& start, const Point& end, RoutingCriteria criteria)
 {
     if (!areServicesReady()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Cannot calculate route - services not ready";
+        qWarning() << "[INTEGRATED CONTROLLER] Cannot calculate route - services not ready";
         emit routeCalculationFailed("Services not ready");
         return false;
     }
@@ -172,7 +178,7 @@ void IntegratedNavigationController::clearRoute()
     
     m_activeRoute = Route{};
     
-    qDebug() << "🗑️ [INTEGRATED CONTROLLER] Route cleared";
+    qDebug() << "[INTEGRATED CONTROLLER] Route cleared";
 }
 
 void IntegratedNavigationController::startNavigation()
@@ -180,23 +186,23 @@ void IntegratedNavigationController::startNavigation()
     QMutexLocker locker(&m_mutex);
     
     if (!areServicesReady()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Cannot start navigation - services not ready";
+        qWarning() << "[INTEGRATED CONTROLLER] Cannot start navigation - services not ready";
         return;
     }
     
     if (!hasActiveRoute()) {
-        qWarning() << "❌ [INTEGRATED CONTROLLER] Cannot start navigation - no active route";
+        qWarning() << "[INTEGRATED CONTROLLER] Cannot start navigation - no active route";
         return;
     }
     
-    qDebug() << "🚀 [INTEGRATED CONTROLLER] Starting navigation...";
+    qDebug() << "[INTEGRATED CONTROLLER] Starting navigation...";
     
     // Start guidance with current route
     m_guidanceService->startGuidance(m_activeRoute);
     m_navigationActive = true;
     
     emit navigationStarted();
-    qDebug() << "✅ [INTEGRATED CONTROLLER] Navigation started";
+    qDebug() << "[INTEGRATED CONTROLLER] Navigation started";
 }
 
 void IntegratedNavigationController::stopNavigation()
@@ -207,13 +213,13 @@ void IntegratedNavigationController::stopNavigation()
         return;
     }
     
-    qDebug() << "🛑 [INTEGRATED CONTROLLER] Stopping navigation...";
+    qDebug() << "[INTEGRATED CONTROLLER] Stopping navigation...";
     
     m_guidanceService->stopGuidance();
     m_navigationActive = false;
     
     emit navigationStopped();
-    qDebug() << "✅ [INTEGRATED CONTROLLER] Navigation stopped";
+    qDebug() << "[INTEGRATED CONTROLLER] Navigation stopped";
 }
 
 bool IntegratedNavigationController::isNavigating() const
@@ -297,7 +303,7 @@ std::vector<POI> IntegratedNavigationController::searchPOIs(const QString& searc
     return m_mapService->searchPOI(searchTerm);
 }
 
-POI IntegratedNavigationController::getPOIById(uint32_t poiId)
+POI IntegratedNavigationController::getPOIById(uint64_t poiId)
 {
     return m_mapService->getPOIById(poiId);
 }
@@ -364,7 +370,7 @@ void IntegratedNavigationController::onRouteCalculated(const Route& route)
     QMutexLocker locker(&m_mutex);
     m_activeRoute = route;
     
-    qDebug() << "✅ [INTEGRATED CONTROLLER] Route calculated successfully:"
+    qDebug() << "[INTEGRATED CONTROLLER] Route calculated successfully:"
              << route.total_distance_meters << "meters";
     
     emit routeCalculated(route);
@@ -372,7 +378,7 @@ void IntegratedNavigationController::onRouteCalculated(const Route& route)
 
 void IntegratedNavigationController::onRouteCalculationFailed(const QString& error)
 {
-    qWarning() << "❌ [INTEGRATED CONTROLLER] Route calculation failed:" << error;
+    qWarning() << "[INTEGRATED CONTROLLER] Route calculation failed:" << error;
     emit routeCalculationFailed(error);
 }
 

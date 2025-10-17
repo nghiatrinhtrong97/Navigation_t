@@ -64,6 +64,8 @@ public:
     void clearWaypoints();
     void setClickedPoint(const Point& point);
     void clearClickedPoint();
+    void setPOILabel(const QString& label);
+    void clearPOILabel();
 
     // Animation
     void animateToPosition(const Point& position);
@@ -150,6 +152,8 @@ private:
     
     Point m_clickedPoint;
     bool m_hasClickedPoint;
+    QString m_poiLabel;
+    bool m_hasPOILabel;
     
     std::vector<Point> m_routePoints;
 

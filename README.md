@@ -3,7 +3,7 @@
 
 A cross-platform automotive navigation system built with C++ and Qt, featuring integrated positioning, routing, map rendering, and guidance services.
 
-## 🎯 Overview
+## Overview
 
 This project implements a complete navigation solution for automotive applications with the following key features:
 
@@ -13,7 +13,7 @@ This project implements a complete navigation solution for automotive applicatio
 - **Guidance Service** - Real-time navigation instructions
 - **Cross-Platform** - Supports Linux, Windows, and QNX
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Navigation_t/
@@ -30,7 +30,7 @@ Navigation_t/
 └── docs/            # Documentation
 ```
 
-## 🔑 Key Components
+## Key Components
 
 ### Services
 - **Positioning Service** - GPS/GNSS integration with CAN bus fusion
@@ -45,7 +45,7 @@ Navigation_t/
 - Navigation status panel
 - Qt-based modern UI
 
-## 🛠️ Build Instructions
+## Build Instructions
 
 ### Prerequisites
 - CMake 3.16+
@@ -73,7 +73,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=qnx.cmake ..
 make -j$(nproc)
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Run the GUI Application
 ```bash
@@ -85,7 +85,7 @@ make -j$(nproc)
 ./build/hmi/nav_hmi_gui --console
 ```
 
-## 📝 Configuration
+## Configuration
 
 Edit [`config/navigation.conf`](config/navigation.conf) to customize:
 - Map data paths
@@ -93,7 +93,7 @@ Edit [`config/navigation.conf`](config/navigation.conf) to customize:
 - Service ports and timeouts
 - UI preferences
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Enable tests during build
@@ -127,7 +127,7 @@ cpack --config CPackSourceConfig.cmake
 - [Cross-Platform Build](CROSS_PLATFORM_BUILD_SUMMARY.md) - Build system guide
 - [Enhanced HMI Features](docs/ENHANCED_HMI_FEATURES.md) - UI components
 
-## 🔧 Technology Stack
+## Technology Stack
 
 - **Language**: C++17
 - **GUI Framework**: Qt 5/6 (Widgets, Network)
@@ -135,4 +135,4 @@ cpack --config CPackSourceConfig.cmake
 - **Threading**: POSIX threads
 - **IPC**: Unix domain sockets / Named pipes
 
-## 📊 System Requirements
+## System Requirements

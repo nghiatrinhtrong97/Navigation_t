@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../models/include/navigation_models.h"
+#include "poi_service.h"  // Include POI struct from poi_service
 #include <QObject>
 #include <QTimer>
 #include <vector>
@@ -8,17 +9,12 @@
 
 namespace nav {
 
-/**
- * @brief POI (Point of Interest) data structure
- */
-struct POI {
-    uint32_t id;
-    Point location;
-    QString name;
-    QString category;
-    QString description;
-    double rating;
-};
+// POI struct is now imported from poi_service.h
+// New POI structure:
+// - uint64_t poi_id (changed from uint32_t id)
+// - double latitude, longitude (changed from Point location)
+// - std::string name, category, address
+// - Removed: description, rating
 
 /**
  * @brief Map tile data structure
@@ -48,10 +44,10 @@ public:
     bool initialize();
     void shutdown();
     
-    // Map data queries
+    // Map data queries - updated for new POI structure
     std::vector<POI> findPOINearLocation(const Point& location, double radiusMeters, const QString& category = QString()) const;
     std::vector<POI> searchPOI(const QString& searchTerm) const;
-    POI getPOIById(uint32_t poiId) const;
+    POI getPOIById(uint64_t poiId) const;  // changed from uint32_t to uint64_t
     
     // Map tile management
     MapTile getMapTile(const Point& location, int zoomLevel);
@@ -90,7 +86,7 @@ private:
     
     // POI data
     std::vector<POI> m_pois;
-    std::map<QString, std::vector<uint32_t>> m_categoryIndex; // category -> POI IDs
+    std::map<QString, std::vector<uint64_t>> m_categoryIndex; // changed from uint32_t to uint64_t for POI IDs
     
     // Map tile data
     std::map<uint32_t, MapTile> m_tileCache;

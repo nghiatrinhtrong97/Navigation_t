@@ -78,11 +78,12 @@ std::vector<POI> MapServiceCore::findPOINearLocation(const Point& location, doub
     std::vector<POI> nearbyPOIs;
     
     for (const auto& poi : m_pois) {
-        double distance = calculateDistance(location, poi.location);
+        Point poiLocation{poi.latitude, poi.longitude};
+        double distance = calculateDistance(location, poiLocation);
         
         if (distance <= radiusMeters) {
             // Check category filter
-            if (category.isEmpty() || poi.category == category) {
+            if (category.isEmpty() || QString::fromStdString(poi.category) == category) {
                 nearbyPOIs.push_back(poi);
             }
         }
@@ -91,7 +92,9 @@ std::vector<POI> MapServiceCore::findPOINearLocation(const Point& location, doub
     // Sort by distance
     std::sort(nearbyPOIs.begin(), nearbyPOIs.end(), 
               [&location, this](const POI& a, const POI& b) {
-                  return calculateDistance(location, a.location) < calculateDistance(location, b.location);
+                  Point locA{a.latitude, a.longitude};
+                  Point locB{b.latitude, b.longitude};
+                  return calculateDistance(location, locA) < calculateDistance(location, locB);
               });
     
     qDebug() << "🔍 [MAP CORE] Found" << nearbyPOIs.size() << "POIs near location within" << radiusMeters << "m";
@@ -105,9 +108,11 @@ std::vector<POI> MapServiceCore::searchPOI(const QString& searchTerm) const
     QString lowerSearchTerm = searchTerm.toLower();
     
     for (const auto& poi : m_pois) {
-        if (poi.name.toLower().contains(lowerSearchTerm) ||
-            poi.description.toLower().contains(lowerSearchTerm) ||
-            poi.category.toLower().contains(lowerSearchTerm)) {
+        QString poiName = QString::fromStdString(poi.name);
+        QString poiCategory = QString::fromStdString(poi.category);
+        
+        if (poiName.toLower().contains(lowerSearchTerm) ||
+            poiCategory.toLower().contains(lowerSearchTerm)) {
             results.push_back(poi);
         }
     }
@@ -117,10 +122,10 @@ std::vector<POI> MapServiceCore::searchPOI(const QString& searchTerm) const
     return results;
 }
 
-POI MapServiceCore::getPOIById(uint32_t poiId) const
+POI MapServiceCore::getPOIById(uint64_t poiId) const
 {
     for (const auto& poi : m_pois) {
-        if (poi.id == poiId) {
+        if (poi.poi_id == poiId) {
             return poi;
         }
     }
@@ -322,17 +327,17 @@ void MapServiceCore::initializeSamplePOIs()
         const auto& sample = sampleData[i];
         
         POI poi;
-        poi.id = static_cast<uint32_t>(i + 1);
-        poi.location = Point(sample.lat, sample.lon);
-        poi.name = sample.name;
-        poi.category = sample.category;
-        poi.description = sample.description;
-        poi.rating = sample.rating;
+        poi.poi_id = static_cast<uint64_t>(i + 1);
+        poi.latitude = sample.lat;
+        poi.longitude = sample.lon;
+        poi.name = sample.name.toStdString();
+        poi.category = sample.category.toStdString();
+        poi.address = "Hanoi, Vietnam";  // Default address
         
         m_pois.push_back(poi);
         
         // Update category index
-        m_categoryIndex[poi.category].push_back(poi.id);
+        m_categoryIndex[sample.category].push_back(poi.poi_id);
     }
     
     qDebug() << "📊 [MAP CORE] Initialized" << m_pois.size() << "sample POIs";

@@ -55,7 +55,7 @@ bool PositioningServiceCore::initialize()
     m_initialized = true;
     m_serviceReady = true;
     
-    qDebug() << "✅ [POSITIONING CORE] Positioning service initialized successfully";
+    qDebug() << "[POSITIONING CORE] Positioning service initialized successfully";
     emit serviceStatusChanged(true);
     
     return true;
@@ -76,7 +76,7 @@ void PositioningServiceCore::shutdown()
     m_serviceReady = false;
     
     emit serviceStatusChanged(false);
-    qDebug() << "✅ [POSITIONING CORE] Positioning service shut down";
+    qDebug() << "[POSITIONING CORE] Positioning service shut down";
 }
 
 Point PositioningServiceCore::getCurrentPosition() const

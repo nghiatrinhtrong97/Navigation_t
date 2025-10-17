@@ -6,6 +6,7 @@
 #include "../../services/include/routing_service_core.h"
 #include "../../services/include/guidance_service_core.h"
 #include "../../services/include/map_service_core.h"
+#include "../../services/include/poi_service.h"
 #include <QObject>
 #include <QTimer>
 #include <QMutex>
@@ -60,13 +61,14 @@ public:
     // Map and POI services
     std::vector<POI> findNearbyPOIs(const Point& location, double radiusMeters, const QString& category = QString());
     std::vector<POI> searchPOIs(const QString& searchTerm);
-    POI getPOIById(uint32_t poiId);
+    POI getPOIById(uint64_t poiId);
     
     // Service access (for direct UI integration)
     PositioningServiceCore* getPositioningService() const { return m_positioningService.get(); }
     RoutingServiceCore* getRoutingService() const { return m_routingService.get(); }
     GuidanceServiceCore* getGuidanceService() const { return m_guidanceService.get(); }
     MapServiceCore* getMapService() const { return m_mapService.get(); }
+    POIService* getPOIService() const { return m_poiService.get(); }
 
 signals:
     void positionChanged(const Point& position, double heading, double speed);
@@ -96,6 +98,7 @@ private:
     std::unique_ptr<RoutingServiceCore> m_routingService;
     std::unique_ptr<GuidanceServiceCore> m_guidanceService;
     std::unique_ptr<MapServiceCore> m_mapService;
+    std::unique_ptr<POIService> m_poiService;
     
     // Navigation state
     bool m_servicesInitialized;

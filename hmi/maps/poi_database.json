@@ -1,0 +1,802 @@
+[
+  {
+    "id": 1,
+    "name": "Pho Gia Truyen",
+    "category": "restaurant",
+    "latitude": 21.028511,
+    "longitude": 105.804817,
+    "address": "49 Bat Dan, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 2,
+    "name": "Bun Cha Huong Lien",
+    "category": "restaurant",
+    "latitude": 21.029000,
+    "longitude": 105.805500,
+    "address": "24 Le Van Huu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 3,
+    "name": "Quan An Ngon",
+    "category": "restaurant",
+    "latitude": 21.027500,
+    "longitude": 105.804000,
+    "address": "18 Phan Boi Chau, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 4,
+    "name": "Pho 24",
+    "category": "restaurant",
+    "latitude": 21.031200,
+    "longitude": 105.806800,
+    "address": "Trang Tien Plaza, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 5,
+    "name": "Bun Bo Nam Bo",
+    "category": "restaurant",
+    "latitude": 21.026800,
+    "longitude": 105.803500,
+    "address": "67 Hang Dieu, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 6,
+    "name": "Hoan Kiem Lake",
+    "category": "attraction",
+    "latitude": 21.024500,
+    "longitude": 105.841200,
+    "address": "Le Thai To, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 7,
+    "name": "Temple of Literature",
+    "category": "attraction",
+    "latitude": 21.033600,
+    "longitude": 105.844800,
+    "address": "58 Quoc Tu Giam, Dong Da, Hanoi"
+  },
+  {
+    "id": 8,
+    "name": "Ho Chi Minh Mausoleum",
+    "category": "attraction",
+    "latitude": 21.058300,
+    "longitude": 105.834700,
+    "address": "19 Ngoc Ha, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 9,
+    "name": "One Pillar Pagoda",
+    "category": "attraction",
+    "latitude": 21.035800,
+    "longitude": 105.834200,
+    "address": "Chua Mot Cot, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 10,
+    "name": "Hanoi Old Quarter",
+    "category": "attraction",
+    "latitude": 21.033000,
+    "longitude": 105.852000,
+    "address": "Old Quarter, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 11,
+    "name": "Shell Gas Station",
+    "category": "gas_station",
+    "latitude": 21.025000,
+    "longitude": 105.802000,
+    "address": "Ba Trieu Street, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 12,
+    "name": "Petrolimex Station",
+    "category": "gas_station",
+    "latitude": 21.030000,
+    "longitude": 105.810000,
+    "address": "Tran Hung Dao, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 13,
+    "name": "Total Gas Station",
+    "category": "gas_station",
+    "latitude": 21.015500,
+    "longitude": 105.826000,
+    "address": "Giai Phong Road, Dong Da, Hanoi"
+  },
+  {
+    "id": 14,
+    "name": "Puma Energy Station",
+    "category": "gas_station",
+    "latitude": 21.045000,
+    "longitude": 105.830000,
+    "address": "Nguyen Thai Hoc, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 15,
+    "name": "Hanoi La Siesta Hotel",
+    "category": "hotel",
+    "latitude": 21.028000,
+    "longitude": 105.805000,
+    "address": "94 Ma May, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 16,
+    "name": "Golden Sun Palace Hotel",
+    "category": "hotel",
+    "latitude": 21.027000,
+    "longitude": 105.804500,
+    "address": "1 Luong Ngoc Quyen, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 17,
+    "name": "Sofitel Legend Metropole",
+    "category": "hotel",
+    "latitude": 21.024800,
+    "longitude": 105.857200,
+    "address": "15 Ngo Quyen, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 18,
+    "name": "Hilton Hanoi Opera",
+    "category": "hotel",
+    "latitude": 21.023500,
+    "longitude": 105.857500,
+    "address": "1 Le Thanh Tong, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 19,
+    "name": "JW Marriott Hotel",
+    "category": "hotel",
+    "latitude": 21.005000,
+    "longitude": 105.807000,
+    "address": "8 Do Duc Duc, Me Tri, Hanoi"
+  },
+  {
+    "id": 20,
+    "name": "Dong Xuan Market",
+    "category": "shopping",
+    "latitude": 21.029500,
+    "longitude": 105.806000,
+    "address": "Dong Xuan, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 21,
+    "name": "Weekend Night Market",
+    "category": "shopping",
+    "latitude": 21.032000,
+    "longitude": 105.808000,
+    "address": "Hang Dao, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 22,
+    "name": "Vincom Center",
+    "category": "shopping",
+    "latitude": 21.021800,
+    "longitude": 105.842500,
+    "address": "191 Ba Trieu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 23,
+    "name": "Trang Tien Plaza",
+    "category": "shopping",
+    "latitude": 21.024000,
+    "longitude": 105.857000,
+    "address": "24 Hai Ba Trung, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 24,
+    "name": "Vietcombank Hoan Kiem",
+    "category": "bank",
+    "latitude": 21.028500,
+    "longitude": 105.853000,
+    "address": "9 Trang Tien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 25,
+    "name": "Techcombank Hang Bai",
+    "category": "bank",
+    "latitude": 21.022000,
+    "longitude": 105.852500,
+    "address": "191 Ba Trieu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 26,
+    "name": "BIDV Hoan Kiem",
+    "category": "bank",
+    "latitude": 21.026500,
+    "longitude": 105.855000,
+    "address": "45 Trang Tien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 27,
+    "name": "Bach Mai Hospital",
+    "category": "hospital",
+    "latitude": 21.004200,
+    "longitude": 105.843700,
+    "address": "78 Giai Phong, Dong Da, Hanoi"
+  },
+  {
+    "id": 28,
+    "name": "Viet Duc Hospital",
+    "category": "hospital",
+    "latitude": 21.022800,
+    "longitude": 105.842300,
+    "address": "40 Trang Thi, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 29,
+    "name": "Saint Paul Hospital",
+    "category": "hospital",
+    "latitude": 21.020500,
+    "longitude": 105.845000,
+    "address": "12 Chu Van An, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 30,
+    "name": "Times City Parking",
+    "category": "parking",
+    "latitude": 21.006500,
+    "longitude": 105.864500,
+    "address": "458 Minh Khai, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 31,
+    "name": "Vincom Parking",
+    "category": "parking",
+    "latitude": 21.021500,
+    "longitude": 105.842000,
+    "address": "191 Ba Trieu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 32,
+    "name": "Highlands Coffee Hoan Kiem",
+    "category": "restaurant",
+    "latitude": 21.025500,
+    "longitude": 105.854500,
+    "address": "15 Ngo Quyen, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 33,
+    "name": "Cong Caphe",
+    "category": "restaurant",
+    "latitude": 21.029800,
+    "longitude": 105.851200,
+    "address": "27 Ngo Huyen, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 34,
+    "name": "The Coffee House",
+    "category": "restaurant",
+    "latitude": 21.024200,
+    "longitude": 105.856800,
+    "address": "2 Ngo Quyen, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 35,
+    "name": "Starbucks Hoan Kiem",
+    "category": "restaurant",
+    "latitude": 21.023800,
+    "longitude": 105.857500,
+    "address": "22 Hai Ba Trung, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 36,
+    "name": "McDonald's Hoan Kiem",
+    "category": "restaurant",
+    "latitude": 21.024500,
+    "longitude": 105.856500,
+    "address": "Trang Tien Plaza, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 37,
+    "name": "KFC Hang Bai",
+    "category": "restaurant",
+    "latitude": 21.022500,
+    "longitude": 105.853000,
+    "address": "191 Ba Trieu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 38,
+    "name": "Lotteria Vincom",
+    "category": "restaurant",
+    "latitude": 21.021800,
+    "longitude": 105.842800,
+    "address": "191 Ba Trieu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 39,
+    "name": "Pizza 4P's",
+    "category": "restaurant",
+    "latitude": 21.026200,
+    "longitude": 105.804800,
+    "address": "32 Au Trieu, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 40,
+    "name": "Hanoi Social Club",
+    "category": "restaurant",
+    "latitude": 21.030500,
+    "longitude": 105.850500,
+    "address": "6 Hoi Vu, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 41,
+    "name": "Bia Hoi Corner",
+    "category": "restaurant",
+    "latitude": 21.031800,
+    "longitude": 105.849200,
+    "address": "2 Ta Hien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 42,
+    "name": "Banh Mi 25",
+    "category": "restaurant",
+    "latitude": 21.029200,
+    "longitude": 105.852800,
+    "address": "25 Hang Ca, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 43,
+    "name": "Nem Cua Be Dac Kim",
+    "category": "restaurant",
+    "latitude": 21.010500,
+    "longitude": 105.833500,
+    "address": "67 Duong Thanh, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 44,
+    "name": "Cha Ca La Vong",
+    "category": "restaurant",
+    "latitude": 21.031500,
+    "longitude": 105.852000,
+    "address": "14 Cha Ca, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 45,
+    "name": "Bun Thang Ba Duc",
+    "category": "restaurant",
+    "latitude": 21.030200,
+    "longitude": 105.851500,
+    "address": "48 Cau Go, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 46,
+    "name": "West Lake",
+    "category": "attraction",
+    "latitude": 21.055000,
+    "longitude": 105.823000,
+    "address": "West Lake, Tay Ho, Hanoi"
+  },
+  {
+    "id": 47,
+    "name": "Tran Quoc Pagoda",
+    "category": "attraction",
+    "latitude": 21.047500,
+    "longitude": 105.835500,
+    "address": "Thanh Nien, Tay Ho, Hanoi"
+  },
+  {
+    "id": 48,
+    "name": "Vietnamese Women's Museum",
+    "category": "attraction",
+    "latitude": 21.023000,
+    "longitude": 105.849500,
+    "address": "36 Ly Thuong Kiet, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 49,
+    "name": "Hanoi Opera House",
+    "category": "attraction",
+    "latitude": 21.023500,
+    "longitude": 105.857800,
+    "address": "1 Trang Tien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 50,
+    "name": "Long Bien Bridge",
+    "category": "attraction",
+    "latitude": 21.034500,
+    "longitude": 105.860000,
+    "address": "Tran Nhat Duat, Long Bien, Hanoi"
+  },
+  {
+    "id": 51,
+    "name": "Thang Long Water Puppet",
+    "category": "attraction",
+    "latitude": 21.027800,
+    "longitude": 105.850000,
+    "address": "57B Dinh Tien Hoang, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 52,
+    "name": "Hanoi Train Street",
+    "category": "attraction",
+    "latitude": 21.027000,
+    "longitude": 105.842500,
+    "address": "Ngo 224 Le Duan, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 53,
+    "name": "Imperial Citadel of Thang Long",
+    "category": "attraction",
+    "latitude": 21.034200,
+    "longitude": 105.836500,
+    "address": "Hoang Dieu, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 54,
+    "name": "Ho Chi Minh Museum",
+    "category": "attraction",
+    "latitude": 21.037800,
+    "longitude": 105.835500,
+    "address": "19 Ngoc Ha, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 55,
+    "name": "Presidential Palace",
+    "category": "attraction",
+    "latitude": 21.038500,
+    "longitude": 105.833800,
+    "address": "1 Bach Thao, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 56,
+    "name": "Esso Gas Station",
+    "category": "gas_station",
+    "latitude": 21.012000,
+    "longitude": 105.838500,
+    "address": "Nguyen Luong Bang, Dong Da, Hanoi"
+  },
+  {
+    "id": 57,
+    "name": "Caltex Station",
+    "category": "gas_station",
+    "latitude": 21.041200,
+    "longitude": 105.828500,
+    "address": "Hoang Hoa Tham, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 58,
+    "name": "Petrolimex Giai Phong",
+    "category": "gas_station",
+    "latitude": 21.008500,
+    "longitude": 105.846000,
+    "address": "Giai Phong Road, Dong Da, Hanoi"
+  },
+  {
+    "id": 59,
+    "name": "Shell Lang Ha",
+    "category": "gas_station",
+    "latitude": 21.015200,
+    "longitude": 105.807500,
+    "address": "Lang Ha Street, Dong Da, Hanoi"
+  },
+  {
+    "id": 60,
+    "name": "Hanoi Daewoo Hotel",
+    "category": "hotel",
+    "latitude": 21.041800,
+    "longitude": 105.819500,
+    "address": "360 Kim Ma, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 61,
+    "name": "Lotte Hotel Hanoi",
+    "category": "hotel",
+    "latitude": 21.022200,
+    "longitude": 105.809000,
+    "address": "54 Lieu Giai, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 62,
+    "name": "InterContinental Hanoi",
+    "category": "hotel",
+    "latitude": 21.055200,
+    "longitude": 105.826000,
+    "address": "1A Nghi Tam, Tay Ho, Hanoi"
+  },
+  {
+    "id": 63,
+    "name": "Melia Hanoi",
+    "category": "hotel",
+    "latitude": 21.022500,
+    "longitude": 105.810500,
+    "address": "44B Ly Thuong Kiet, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 64,
+    "name": "Sheraton Hanoi",
+    "category": "hotel",
+    "latitude": 21.054800,
+    "longitude": 105.826500,
+    "address": "K5 Nghi Tam, Tay Ho, Hanoi"
+  },
+  {
+    "id": 65,
+    "name": "Hanoi Hotel",
+    "category": "hotel",
+    "latitude": 21.024800,
+    "longitude": 105.846500,
+    "address": "D8 Giang Vo, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 66,
+    "name": "Pullman Hanoi",
+    "category": "hotel",
+    "latitude": 21.024500,
+    "longitude": 105.809500,
+    "address": "40 Cat Linh, Dong Da, Hanoi"
+  },
+  {
+    "id": 67,
+    "name": "Pan Pacific Hanoi",
+    "category": "hotel",
+    "latitude": 21.020800,
+    "longitude": 105.844800,
+    "address": "1 Thanh Nien, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 68,
+    "name": "Royal City Vinmart",
+    "category": "shopping",
+    "latitude": 21.004800,
+    "longitude": 105.816000,
+    "address": "72A Nguyen Trai, Thanh Xuan, Hanoi"
+  },
+  {
+    "id": 69,
+    "name": "Aeon Mall Long Bien",
+    "category": "shopping",
+    "latitude": 21.055000,
+    "longitude": 105.875000,
+    "address": "27 Co Linh, Long Bien, Hanoi"
+  },
+  {
+    "id": 70,
+    "name": "Vincom Mega Mall",
+    "category": "shopping",
+    "latitude": 21.005500,
+    "longitude": 105.815500,
+    "address": "72 Nguyen Trai, Thanh Xuan, Hanoi"
+  },
+  {
+    "id": 71,
+    "name": "Big C Thang Long",
+    "category": "shopping",
+    "latitude": 21.023500,
+    "longitude": 105.791500,
+    "address": "222 Tran Duy Hung, Cau Giay, Hanoi"
+  },
+  {
+    "id": 72,
+    "name": "Lotte Center",
+    "category": "shopping",
+    "latitude": 21.022000,
+    "longitude": 105.809500,
+    "address": "54 Lieu Giai, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 73,
+    "name": "Vietcombank Ba Dinh",
+    "category": "bank",
+    "latitude": 21.032500,
+    "longitude": 105.824500,
+    "address": "108 Tran Hung Dao, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 74,
+    "name": "ACB Bank",
+    "category": "bank",
+    "latitude": 21.023800,
+    "longitude": 105.853500,
+    "address": "10 Le Thai To, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 75,
+    "name": "MB Bank Hoan Kiem",
+    "category": "bank",
+    "latitude": 21.025200,
+    "longitude": 105.854800,
+    "address": "23 Trang Tien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 76,
+    "name": "Sacombank",
+    "category": "bank",
+    "latitude": 21.024800,
+    "longitude": 105.852500,
+    "address": "18 Ly Thuong Kiet, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 77,
+    "name": "VPBank",
+    "category": "bank",
+    "latitude": 21.026800,
+    "longitude": 105.856200,
+    "address": "89 Lang Ha, Dong Da, Hanoi"
+  },
+  {
+    "id": 78,
+    "name": "E Hospital",
+    "category": "hospital",
+    "latitude": 21.017500,
+    "longitude": 105.837500,
+    "address": "87-89 Tran Cung, Bac Tu Liem, Hanoi"
+  },
+  {
+    "id": 79,
+    "name": "108 Hospital",
+    "category": "hospital",
+    "latitude": 21.012800,
+    "longitude": 105.790500,
+    "address": "1 Tran Hung Dao, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 80,
+    "name": "K Hospital",
+    "category": "hospital",
+    "latitude": 21.018500,
+    "longitude": 105.835500,
+    "address": "43 Quan Su, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 81,
+    "name": "Vinmec Times City",
+    "category": "hospital",
+    "latitude": 21.006200,
+    "longitude": 105.864000,
+    "address": "458 Minh Khai, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 82,
+    "name": "French Hospital",
+    "category": "hospital",
+    "latitude": 21.018800,
+    "longitude": 105.797500,
+    "address": "1 Phuong Mai, Dong Da, Hanoi"
+  },
+  {
+    "id": 83,
+    "name": "Hoan Kiem Parking",
+    "category": "parking",
+    "latitude": 21.024800,
+    "longitude": 105.852500,
+    "address": "Dinh Tien Hoang, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 84,
+    "name": "Trang Tien Parking",
+    "category": "parking",
+    "latitude": 21.024200,
+    "longitude": 105.856500,
+    "address": "Trang Tien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 85,
+    "name": "Lotte Parking",
+    "category": "parking",
+    "latitude": 21.022200,
+    "longitude": 105.809200,
+    "address": "54 Lieu Giai, Ba Dinh, Hanoi"
+  },
+  {
+    "id": 86,
+    "name": "Royal City Parking",
+    "category": "parking",
+    "latitude": 21.004500,
+    "longitude": 105.816200,
+    "address": "72A Nguyen Trai, Thanh Xuan, Hanoi"
+  },
+  {
+    "id": 87,
+    "name": "Aeon Parking",
+    "category": "parking",
+    "latitude": 21.055200,
+    "longitude": 105.875200,
+    "address": "27 Co Linh, Long Bien, Hanoi"
+  },
+  {
+    "id": 88,
+    "name": "Xoi Yen",
+    "category": "restaurant",
+    "latitude": 21.027800,
+    "longitude": 105.851500,
+    "address": "35B Nguyen Huu Huan, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 89,
+    "name": "Banh Cuon Gia Truyen",
+    "category": "restaurant",
+    "latitude": 21.029500,
+    "longitude": 105.850800,
+    "address": "26 Hang Ga, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 90,
+    "name": "Mi Van Thuan",
+    "category": "restaurant",
+    "latitude": 21.030800,
+    "longitude": 105.852500,
+    "address": "37 Nguyen Sieu, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 91,
+    "name": "Com Pho Co",
+    "category": "restaurant",
+    "latitude": 21.031500,
+    "longitude": 105.853000,
+    "address": "5 Hang Gai, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 92,
+    "name": "Banh Tom Ho Tay",
+    "category": "restaurant",
+    "latitude": 21.057500,
+    "longitude": 105.825500,
+    "address": "1 Thanh Nien, Tay Ho, Hanoi"
+  },
+  {
+    "id": 93,
+    "name": "Huong Lien Restaurant",
+    "category": "restaurant",
+    "latitude": 21.029200,
+    "longitude": 105.805800,
+    "address": "24 Le Van Huu, Hai Ba Trung, Hanoi"
+  },
+  {
+    "id": 94,
+    "name": "Madame Hien",
+    "category": "restaurant",
+    "latitude": 21.027500,
+    "longitude": 105.850500,
+    "address": "15 Chan Cam, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 95,
+    "name": "Green Tangerine",
+    "category": "restaurant",
+    "latitude": 21.030800,
+    "longitude": 105.851800,
+    "address": "48 Hang Be, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 96,
+    "name": "La Badiane",
+    "category": "restaurant",
+    "latitude": 21.028500,
+    "longitude": 105.850200,
+    "address": "10 Nam Ngu, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 97,
+    "name": "Essence Restaurant",
+    "category": "restaurant",
+    "latitude": 21.029800,
+    "longitude": 105.851500,
+    "address": "22 Ta Hien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 98,
+    "name": "Highway4",
+    "category": "restaurant",
+    "latitude": 21.032500,
+    "longitude": 105.852500,
+    "address": "5 Hang Tre, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 99,
+    "name": "The Moose & Roo",
+    "category": "restaurant",
+    "latitude": 21.031200,
+    "longitude": 105.849800,
+    "address": "36 Ta Hien, Hoan Kiem, Hanoi"
+  },
+  {
+    "id": 100,
+    "name": "Bia Hoi Ha Noi",
+    "category": "restaurant",
+    "latitude": 21.032000,
+    "longitude": 105.849500,
+    "address": "Corner Ta Hien - Luong Ngoc Quyen, Hoan Kiem, Hanoi"
+  }
+]

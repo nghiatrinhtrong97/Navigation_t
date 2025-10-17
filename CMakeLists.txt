@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Cross-platform configuration
 if(WIN32)
     message(STATUS "Building for Windows")
-    set(CMAKE_PREFIX_PATH "C:/Qt/5.15.2/msvc2019_64" CACHE PATH "Qt installation path")
+    # Updated Qt6 path for Windows
+    set(CMAKE_PREFIX_PATH "C:/Qt/6.6.1/msvc2019_64" CACHE PATH "Qt installation path")
     add_definitions(-DWIN32_LEAN_AND_MEAN -DNOMINMAX)
 elseif(UNIX AND NOT APPLE)
     message(STATUS "Building for Linux")

@@ -21,6 +21,7 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         services/include/routing_service_core.h
         services/include/guidance_service_core.h
         services/include/map_service_core.h
+        services/include/poi_service.h
         
         # Models and Interfaces
         models/include/navigation_models.h
@@ -41,14 +42,10 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         services/src/routing_service_core.cpp
         services/src/guidance_service_core.cpp
         services/src/map_service_core.cpp
+        services/src/poi_service.cpp
         
         # Models
         models/src/navigation_models.cpp
-    )
-
-    # UI files
-    set(HMI_UI_FILES
-        ui/navigation_main_window.ui
     )
 
     # Resource files (Qt version-agnostic)
@@ -63,7 +60,6 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         src/main.cpp
         ${HMI_SOURCES}
         ${HMI_HEADERS}
-        ${HMI_UI_FILES}
         ${RESOURCE_FILES}
     )
     

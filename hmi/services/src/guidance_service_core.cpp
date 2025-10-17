@@ -53,17 +53,17 @@ bool GuidanceServiceCore::initialize()
         return true;
     }
     
-    qDebug() << "🚀 [GUIDANCE SERVICE CORE] Initializing guidance service...";
+    qDebug() << "[GUIDANCE SERVICE CORE] Initializing guidance service...";
     
     try {
         // Initialize guidance state
         m_serviceReady = true;
         m_initialized = true;
         
-        qDebug() << "✅ [GUIDANCE SERVICE CORE] Guidance service initialized successfully";
+        qDebug() << "[GUIDANCE SERVICE CORE] Guidance service initialized successfully";
         return true;
     } catch (const std::exception& e) {
-        qWarning() << "❌ [GUIDANCE SERVICE CORE] Failed to initialize:" << e.what();
+        qWarning() << "[GUIDANCE SERVICE CORE] Failed to initialize:" << e.what();
         return false;
     }
 }
@@ -74,13 +74,13 @@ void GuidanceServiceCore::shutdown()
         return;
     }
     
-    qDebug() << "🛑 [GUIDANCE SERVICE CORE] Shutting down guidance service...";
+    qDebug() << "[GUIDANCE SERVICE CORE] Shutting down guidance service...";
     
     stopGuidance();
     m_serviceReady = false;
     m_initialized = false;
     
-    qDebug() << "✅ [GUIDANCE SERVICE CORE] Guidance service shut down";
+    qDebug() << "[GUIDANCE SERVICE CORE] Guidance service shut down";
 }
 
 bool GuidanceServiceCore::isServiceReady() const
@@ -104,16 +104,16 @@ std::string GuidanceServiceCore::getServiceStatus() const
 bool GuidanceServiceCore::startGuidance(const Route& route)
 {
     if (!m_serviceReady) {
-        qWarning() << "❌ [GUIDANCE SERVICE CORE] Cannot start guidance - service not ready";
+        qWarning() << "[GUIDANCE SERVICE CORE] Cannot start guidance - service not ready";
         return false;
     }
     
     if (route.node_count == 0) {
-        qWarning() << "❌ [GUIDANCE SERVICE CORE] Cannot start guidance - empty route";
+        qWarning() << "[GUIDANCE SERVICE CORE] Cannot start guidance - empty route";
         return false;
     }
     
-    qDebug() << "🚀 [GUIDANCE SERVICE CORE] Starting guidance for route with" << route.node_count << "nodes";
+    qDebug() << "[GUIDANCE SERVICE CORE] Starting guidance for route with" << route.node_count << "nodes";
     
     m_activeRoute = route;
     m_currentRouteIndex = 0;
@@ -135,7 +135,7 @@ bool GuidanceServiceCore::startGuidance(const Route& route)
     
     emit guidanceInstructionUpdated(instruction);
     
-    qDebug() << "✅ [GUIDANCE SERVICE CORE] Guidance started successfully";
+    qDebug() << "[GUIDANCE SERVICE CORE] Guidance started successfully";
     return true;
 }
 
@@ -162,7 +162,7 @@ bool GuidanceServiceCore::stopGuidance()
     m_currentInstruction.distance_to_turn_meters = 0.0;
     SAFE_STRCPY(m_currentInstruction.instruction_text, sizeof(m_currentInstruction.instruction_text), "Navigation stopped");
     
-    qDebug() << "✅ [GUIDANCE SERVICE CORE] Guidance stopped";
+    qDebug() << "[GUIDANCE SERVICE CORE] Guidance stopped";
     return true;
 }
 

@@ -51,23 +51,43 @@ REM Install
 echo Installing...
 cmake --build . --target install --config %BUILD_TYPE%
 
+REM Auto-detect Qt installation and copy dependencies
+REM Try to find Qt from CMakeCache.txt
+if exist CMakeCache.txt (
+    for /f "tokens=2 delims==" %%i in ('findstr /C:"CMAKE_PREFIX_PATH:PATH=" CMakeCache.txt') do set QT_DIR=%%i
+)
+
 REM Copy GUI executable if it was built
 if exist hmi\%BUILD_TYPE%\nav_hmi_gui.exe (
     echo Copying GUI executable...
     copy "hmi\%BUILD_TYPE%\nav_hmi_gui.exe" "..\%INSTALL_DIR%\bin\"
     
-    REM Copy Qt DLLs for GUI
-    echo Copying Qt dependencies...
-    copy "C:\Qt\6.6.1\msvc2019_64\bin\Qt6Core.dll" "..\%INSTALL_DIR%\bin\" 2>nul
-    copy "C:\Qt\6.6.1\msvc2019_64\bin\Qt6Gui.dll" "..\%INSTALL_DIR%\bin\" 2>nul
-    copy "C:\Qt\6.6.1\msvc2019_64\bin\Qt6Widgets.dll" "..\%INSTALL_DIR%\bin\" 2>nul
-    copy "C:\Qt\6.6.1\msvc2019_64\bin\Qt6Network.dll" "..\%INSTALL_DIR%\bin\" 2>nul
-    
-    REM Copy platform plugins
-    if not exist "..\%INSTALL_DIR%\bin\platforms" mkdir "..\%INSTALL_DIR%\bin\platforms"
-    copy "C:\Qt\6.6.1\msvc2019_64\plugins\platforms\qwindows.dll" "..\%INSTALL_DIR%\bin\platforms\" 2>nul
-    
-    echo Qt GUI dependencies copied successfully.
+    REM Copy Qt DLLs for GUI - try auto-detected Qt path first
+    if defined QT_DIR (
+        echo Found Qt at: %QT_DIR%
+        echo Copying Qt dependencies from detected path...
+        copy "%QT_DIR%\bin\Qt6Core.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+        copy "%QT_DIR%\bin\Qt6Gui.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+        copy "%QT_DIR%\bin\Qt6Widgets.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+        copy "%QT_DIR%\bin\Qt6Network.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+        
+        REM Copy platform plugins
+        if not exist "..\%INSTALL_DIR%\bin\platforms" mkdir "..\%INSTALL_DIR%\bin\platforms"
+        copy "%QT_DIR%\plugins\platforms\qwindows.dll" "..\%INSTALL_DIR%\bin\platforms\" 2>nul
+        
+        REM Try Qt5 if Qt6 not found
+        if not exist "..\%INSTALL_DIR%\bin\Qt6Core.dll" (
+            echo Trying Qt5 libraries...
+            copy "%QT_DIR%\bin\Qt5Core.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+            copy "%QT_DIR%\bin\Qt5Gui.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+            copy "%QT_DIR%\bin\Qt5Widgets.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+            copy "%QT_DIR%\bin\Qt5Network.dll" "..\%INSTALL_DIR%\bin\" 2>nul
+        )
+        echo Qt GUI dependencies copied successfully.
+    ) else (
+        echo Warning: Could not auto-detect Qt path from CMake cache
+        echo Please manually copy Qt DLLs to %INSTALL_DIR%\bin\
+    )
 )
 
 cd ..

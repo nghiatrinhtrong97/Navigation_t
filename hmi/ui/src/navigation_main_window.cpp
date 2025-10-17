@@ -39,6 +39,14 @@
 #include <QDebug>
 #include <cmath>
 
+#include "../../services/include/poi_service.h"
+#include <chrono>
+#include <QTimer>
+#include <QSpinBox>
+#include <QComboBox>
+#include <QTextEdit>
+#include <QListWidget>
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -89,9 +97,19 @@ NavigationMainWindow::NavigationMainWindow(QWidget *parent)
     , m_stopGuidanceButton(nullptr)
     , m_guidanceStatusLabel(nullptr)
     , m_autoHeadingCheckBox(nullptr)
+    , m_poiService(nullptr)
+    , m_leftPanelContainer(nullptr)
+    , m_rightPanelContainer(nullptr)
+    , m_toggleLeftPanelButton(nullptr)
+    , m_toggleRightPanelButton(nullptr)
+    , m_leftPanelCollapsed(false)
+    , m_rightPanelCollapsed(false)
 {
     // Initialize integrated navigation controller
     m_navController = new IntegratedNavigationController(this);
+    
+    // Get POI service from controller
+    m_poiService = m_navController->getPOIService();
     
     // Initialize simulation timer
     m_simulationTimer = new QTimer(this);
@@ -105,7 +123,7 @@ NavigationMainWindow::NavigationMainWindow(QWidget *parent)
             this, &NavigationMainWindow::onRouteCalculated);
     connect(m_navController, &IntegratedNavigationController::guidanceUpdated,
             this, &NavigationMainWindow::onGuidanceUpdated);
-    
+
     // Initialize services
     if (!m_navController->initializeServices()) {
         QMessageBox::critical(this, "Error", "Failed to initialize navigation services");
@@ -148,23 +166,69 @@ void NavigationMainWindow::setupUI()
     QHBoxLayout *bottomLayout = new QHBoxLayout();
     bottomLayout->setSpacing(10); // Add some spacing between columns
     
-    // Create vertical layouts for left and right columns
-    QVBoxLayout *leftColumn = new QVBoxLayout();
-    QVBoxLayout *rightColumn = new QVBoxLayout();
+    // Create LEFT PANEL with collapse button
+    QVBoxLayout *leftPanelLayout = new QVBoxLayout();
+    
+    // Add collapse button for left panel
+    m_toggleLeftPanelButton = new QPushButton("< Hide Controls");
+    m_toggleLeftPanelButton->setMaximumHeight(30);
+    m_toggleLeftPanelButton->setStyleSheet(
+        "QPushButton { "
+        "   background-color: #2196F3; "
+        "   color: white; "
+        "   font-weight: bold; "
+        "   border-radius: 5px; "
+        "   padding: 5px; "
+        "}"
+        "QPushButton:hover { background-color: #1976D2; }"
+    );
+    connect(m_toggleLeftPanelButton, &QPushButton::clicked, this, &NavigationMainWindow::onToggleLeftPanel);
+    leftPanelLayout->addWidget(m_toggleLeftPanelButton);
+    
+    // Create container for left panel content
+    m_leftPanelContainer = new QWidget();
+    QVBoxLayout *leftColumn = new QVBoxLayout(m_leftPanelContainer);
+    leftColumn->setContentsMargins(0, 0, 0, 0);
     
     // Setup control panel in left column
     setupControlPanel(leftColumn);
     qDebug() << "Control panel setup completed";
     
+    leftPanelLayout->addWidget(m_leftPanelContainer);
+    
+    // Create RIGHT PANEL with collapse button
+    QVBoxLayout *rightPanelLayout = new QVBoxLayout();
+    
+    // Add collapse button for right panel
+    m_toggleRightPanelButton = new QPushButton("Hide Info >");
+    m_toggleRightPanelButton->setMaximumHeight(30);
+    m_toggleRightPanelButton->setStyleSheet(
+        "QPushButton { "
+        "   background-color: #4CAF50; "
+        "   color: white; "
+        "   font-weight: bold; "
+        "   border-radius: 5px; "
+        "   padding: 5px; "
+        "}"
+        "QPushButton:hover { background-color: #45a049; }"
+    );
+    connect(m_toggleRightPanelButton, &QPushButton::clicked, this, &NavigationMainWindow::onToggleRightPanel);
+    rightPanelLayout->addWidget(m_toggleRightPanelButton);
+    
+    // Create container for right panel content
+    m_rightPanelContainer = new QWidget();
+    QVBoxLayout *rightColumn = new QVBoxLayout(m_rightPanelContainer);
+    rightColumn->setContentsMargins(0, 0, 0, 0);
+    
     // Setup info panel in right column
     setupInfoPanel(rightColumn);
     qDebug() << "Info panel setup completed";
     
-    // Add columns to horizontal layout with stretch factors
-    // Left column (controls) gets more space: stretch factor 4
-    // Right column (info) gets less space: stretch factor 1 (compact)
-    bottomLayout->addLayout(leftColumn, 4);
-    bottomLayout->addLayout(rightColumn, 1);
+    rightPanelLayout->addWidget(m_rightPanelContainer);
+    
+    // Add panels to horizontal layout with stretch factors
+    bottomLayout->addLayout(leftPanelLayout, 4);
+    bottomLayout->addLayout(rightPanelLayout, 1);
     
     // Add the 2-column layout to main layout
     mainLayout->addLayout(bottomLayout);
@@ -254,6 +318,8 @@ void NavigationMainWindow::setupControlPanel(QVBoxLayout* parentLayout)
     infoLayout->addWidget(m_totalDistanceLabel);
     infoLayout->addWidget(m_totalTimeLabel);
     infoLayout->addWidget(m_remainingDistanceLabel);
+
+    //Needtodo
     
     // Assemble route group
     routeLayout->addWidget(startGroup);
@@ -282,8 +348,8 @@ void NavigationMainWindow::setupControlPanel(QVBoxLayout* parentLayout)
 void NavigationMainWindow::setupInfoPanel(QVBoxLayout* parentLayout)
 {
     // Basic info panel implementation
-    QGroupBox *infoGroup = new QGroupBox("Information");
-    infoGroup->setMaximumWidth(300); // Limit width to prevent it from being too wide
+    QGroupBox *infoGroup = new QGroupBox("Information & POI Results");
+    infoGroup->setMaximumWidth(400); // Increased width for POI results
     QVBoxLayout *layout = new QVBoxLayout(infoGroup);
     
     // Current position info
@@ -316,6 +382,8 @@ void NavigationMainWindow::setupInfoPanel(QVBoxLayout* parentLayout)
     layout->addWidget(separator);
     layout->addWidget(m_mouseLatLabel);
     layout->addWidget(m_mouseLonLabel);
+
+    //Needtodo
     
     // Add a stretch to push content to top
     layout->addStretch();
@@ -378,7 +446,7 @@ void NavigationMainWindow::createGuidancePopup()
     popupLayout->setSpacing(20);
     
     // Title
-    m_guidancePopupTitle = new QLabel("🧭 NAVIGATION GUIDANCE ACTIVE", m_guidancePopup);
+    m_guidancePopupTitle = new QLabel("NAVIGATION GUIDANCE ACTIVE", m_guidancePopup);
     m_guidancePopupTitle->setAlignment(Qt::AlignCenter);
     m_guidancePopupTitle->setStyleSheet("font-size: 20px; color: #00ff00;");
     
@@ -387,7 +455,7 @@ void NavigationMainWindow::createGuidancePopup()
     m_guidancePopupStatus->setAlignment(Qt::AlignCenter);
     
     // Stop button
-    m_guidancePopupStopButton = new QPushButton("🛑 STOP GUIDANCE", m_guidancePopup);
+    m_guidancePopupStopButton = new QPushButton("STOP GUIDANCE", m_guidancePopup);
     m_guidancePopupStopButton->setFixedSize(200, 50);
     
     // Add to layout
@@ -457,9 +525,9 @@ void NavigationMainWindow::onCalculateRoute()
     
     // Check if integrated navigation controller is ready
     if (!m_navController || !m_navController->areServicesReady()) {
-        statusBar()->showMessage("❌ ERROR: Navigation services are not ready!", 10000);
+        statusBar()->showMessage("ERROR: Navigation services are not ready!", 10000);
         QMessageBox::critical(this, "Service Error", 
-            "❌ Navigation Services Not Ready!\n\n"
+            "Navigation Services Not Ready!\n\n"
             "The navigation services are required for route calculation but are not initialized.\n"
             "Please ensure all navigation services are started before calculating routes.\n\n"
             "Route calculation cannot proceed without the services.");
@@ -736,6 +804,109 @@ void NavigationMainWindow::onMapClicked(const Point& position)
     
     // Show context menu at cursor position
     contextMenu.exec(QCursor::pos());
+}
+
+// Thêm method này sau setupGuidanceControlPanel:
+
+void NavigationMainWindow::setupPOITestPanel(QVBoxLayout* parentLayout)
+{
+    // m_poiTestGroup = new QGroupBox("POI Service Testing Panel");
+    // m_poiTestGroup->setStyleSheet(
+    //     "QGroupBox { font-weight: bold; color: #2E8B57; }"
+    //     "QGroupBox::title { color: #2E8B57; }"
+    // );
+    // QVBoxLayout *layout = new QVBoxLayout(m_poiTestGroup);
+    
+    // // POI Service Status
+    // m_poiStatusLabel = new QLabel("POI Service Status: Initializing...");
+    // m_poiStatusLabel->setStyleSheet("QLabel { color: #FF6600; font-weight: bold; }");
+    // layout->addWidget(m_poiStatusLabel);
+    
+    // // Load POI Data Section
+    // QHBoxLayout *loadLayout = new QHBoxLayout();
+    // loadLayout->addWidget(new QLabel("Data Management:"));
+    // m_poiLoadDataButton = new QPushButton("Load Sample POI Data");
+    // m_poiLoadDataButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }");
+    // loadLayout->addWidget(m_poiLoadDataButton);
+    // layout->addLayout(loadLayout);
+    
+    // // POI Search by Name Section
+    // QHBoxLayout *searchLayout = new QHBoxLayout();
+    // searchLayout->addWidget(new QLabel("Search POI:"));
+    // m_poiSearchEdit = new QLineEdit();
+    // m_poiSearchEdit->setPlaceholderText("Enter POI name (e.g., 'Pho 24', 'Shell')");
+    // m_poiSearchEdit->setMinimumWidth(600);  // Chiều rộng tối thiểu 300 pixels
+    // m_poiSearchEdit->setStyleSheet(
+    //     "QLineEdit { "
+    //     "   background-color: white; "
+    //     "   color: black; "
+    //     "   border: 1px solid #ccc; "
+    //     "   padding: 5px; "
+    //     "}"
+    // );
+    // m_poiSearchButton = new QPushButton("Search by Name");
+    // searchLayout->addWidget(m_poiSearchEdit);  // Stretch factor 4 để chiếm nhiều không gian
+    // searchLayout->addWidget(m_poiSearchButton);
+    // layout->addLayout(searchLayout);
+    
+    // // POI Nearby Search Section
+    // QHBoxLayout *nearbyLayout = new QHBoxLayout();
+    // nearbyLayout->addWidget(new QLabel("Category:"));
+    // m_poiCategoryCombo = new QComboBox();
+    // m_poiCategoryCombo->addItems({
+    //     "All Categories", "gas_station", "restaurant", "hospital", "bank", "parking"
+    // });
+    // nearbyLayout->addWidget(m_poiCategoryCombo);
+    
+    // nearbyLayout->addWidget(new QLabel("Radius (km):"));
+    // m_poiRadiusSpinBox = new QSpinBox();
+    // m_poiRadiusSpinBox->setRange(1, 50);
+    // m_poiRadiusSpinBox->setValue(5);
+    // m_poiRadiusSpinBox->setSuffix(" km");
+    // nearbyLayout->addWidget(m_poiRadiusSpinBox);
+    
+    // m_poiNearbyButton = new QPushButton("Find Nearby");
+    // m_poiNearbyButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; }");
+    // nearbyLayout->addWidget(m_poiNearbyButton);
+    // layout->addLayout(nearbyLayout);
+
+    // // Needtodo
+    
+    // // Address Geocoding Section
+    // QHBoxLayout *geocodeLayout = new QHBoxLayout();
+    // geocodeLayout->addWidget(new QLabel("Address:"));
+    // m_addressEdit = new QLineEdit();
+    // m_addressEdit->setPlaceholderText("Enter address to geocode");
+    // m_addressEdit->setStyleSheet(
+    //     "QLineEdit { "
+    //     "   background-color: white; "
+    //     "   color: black; "
+    //     "   border: 1px solid #ccc; "
+    //     "   padding: 5px; "
+    //     "}"
+    // );
+    // m_geocodeButton = new QPushButton("🏠 Geocode Address");
+    // m_geocodeButton->setStyleSheet("QPushButton { background-color: #FF9800; color: white; }");
+    // geocodeLayout->addWidget(m_addressEdit);
+    // geocodeLayout->addWidget(m_geocodeButton);
+    // layout->addLayout(geocodeLayout);
+    
+    // // Note: Results are now displayed in Information panel (right column)
+    
+    // // Connect signals
+    
+    // // Update POI service status
+    // if (m_poiService && m_poiService->isServiceReady()) {
+    //     m_poiStatusLabel->setText("POI Service Status: Ready");
+    //     m_poiStatusLabel->setStyleSheet("QLabel { color: #2E8B57; font-weight: bold; }");
+    // } else {
+    //     m_poiStatusLabel->setText("POI Service Status: Not Ready");
+    //     m_poiStatusLabel->setStyleSheet("QLabel { color: #DC143C; font-weight: bold; }");
+    // }
+    
+    // if (parentLayout) {
+    //     parentLayout->addWidget(m_poiTestGroup);
+    // }
 }
 
 void NavigationMainWindow::onSimulationSpeedChanged(int speed)
@@ -1049,6 +1220,265 @@ void NavigationMainWindow::onAutoHeadingToggled(bool enabled)
     }
 }
 
+void NavigationMainWindow::onPOILoadData()
+{
+    if (!m_poiService || !m_poiService->isServiceReady()) {
+        m_poiResultsText->setPlainText("ERROR: POI Service not ready!\n\nCannot load POI data.");
+        return;
+    }
+    
+    m_poiResultsText->setPlainText("POI Service is ready!\n\nPOI data has been loaded during service initialization.");
+    m_poiLoadDataButton->setEnabled(true);
+    
+    // Update status
+    m_poiStatusLabel->setText("POI Service Status: Ready");
+    m_poiStatusLabel->setStyleSheet("QLabel { color: #2E8B57; font-weight: bold; }");
+}
+
+void NavigationMainWindow::onPOISearch()
+{
+    if (!m_poiService || !m_poiService->isServiceReady()) {
+        m_poiResultsText->setPlainText("ERROR: POI Service not ready!");
+        return;
+    }
+    
+    QString searchName = m_poiSearchEdit->text().trimmed();
+    if (searchName.isEmpty()) {
+        m_poiResultsText->setPlainText("WARNING: Please enter a POI name to search for.");
+        return;
+    }
+    
+    m_poiResultsText->setPlainText(QString("Searching for POIs with name: '%1'...\n").arg(searchName));
+    
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
+    // Perform POI search by name
+    std::vector<POI> results = m_poiService->searchPOIsByName(searchName);
+    
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+    double queryTimeMs = duration.count() / 1000.0;
+    
+    // Display results
+    QString resultText = QString(
+        "POI NAME SEARCH RESULTS\n"
+        "========================\n"
+        "Search term: '%1'\n"
+        "Results found: %2\n"
+        "Query time: %3 ms\n\n"
+    ).arg(searchName).arg(results.size()).arg(queryTimeMs, 0, 'f', 3);
+    
+    // Store results for later use
+    m_lastSearchResults = results;
+    
+    // Clear and populate list widget
+    m_poiResultsList->clear();
+    
+    if (results.empty()) {
+        resultText += "No POIs found matching your search.\n\n";
+        resultText += "Try searching for:\n";
+        resultText += "- 'Pho' - Vietnamese restaurants\n";
+        resultText += "- 'Shell' - Gas stations\n";
+        resultText += "- 'Hospital' - Medical facilities\n";
+        resultText += "- 'Bank' - Financial services\n";
+    } else {
+        resultText += QString("Found %1 POIs - Click below to view on map").arg(results.size());
+        
+        // Add to list widget
+        for (size_t i = 0; i < results.size(); ++i) {
+            const POI& poi = results[i];
+            QString listItem = QString("%1 (%2)")
+                .arg(QString::fromStdString(poi.name))
+                .arg(QString::fromStdString(poi.category));
+            m_poiResultsList->addItem(listItem);
+        }
+    }
+    
+    m_poiResultsText->setPlainText(resultText);
+}
+
+void NavigationMainWindow::onPOINearbySearch()
+{
+    if (!m_poiService || !m_poiService->isServiceReady()) {
+        m_poiResultsText->setPlainText("ERROR: POI Service not ready!");
+        return;
+    }
+    
+    // Get search parameters
+    QString category = m_poiCategoryCombo->currentText();
+    double radiusKm = m_poiRadiusSpinBox->value();
+    
+    // Use current position or default position
+    double searchLat = m_hasCurrentPosition ? m_currentPosition.latitude : getDefaultLat();
+    double searchLon = m_hasCurrentPosition ? m_currentPosition.longitude : getDefaultLon();
+    
+    m_poiResultsText->setPlainText(QString(
+        "Searching for nearby POIs...\n"
+        "Center: (%1, %2)\n"
+        "Category: %3\n"
+        "Radius: %4 km\n"
+    ).arg(searchLat, 0, 'f', 6).arg(searchLon, 0, 'f', 6).arg(category).arg(radiusKm));
+    
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
+    // Perform proximity search
+    Point searchPoint{searchLat, searchLon};
+    double radiusMeters = radiusKm * 1000.0;
+    QString categoryFilter = (category == "All Categories") ? QString() : category;
+    std::vector<POI> results = m_poiService->findNearbyPOIs(searchPoint, radiusMeters, categoryFilter);
+    
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+    double queryTimeMs = duration.count() / 1000.0;
+    
+    // Display results with performance metrics
+    QString resultText = QString(
+        "PROXIMITY SEARCH RESULTS\n"
+        "===========================\n"
+        "Search center: (%1, %2)\n"
+        "Category filter: %3\n"
+        "Search radius: %4 km\n"
+        "Results found: %5\n"
+        "Query time: %6 ms (Spatial Grid Indexing)\n"
+        "Grid cells queried: ~9 (3x3 neighborhood)\n\n"
+    ).arg(searchLat, 0, 'f', 6)
+     .arg(searchLon, 0, 'f', 6)
+     .arg(category)
+     .arg(radiusKm)
+     .arg(results.size())
+     .arg(queryTimeMs, 0, 'f', 3);
+    
+    // Store results for later use
+    m_lastSearchResults = results;
+    
+    // Clear and populate list widget
+    m_poiResultsList->clear();
+    
+    if (results.empty()) {
+        resultText += "No POIs found in the specified area.\n\n";
+        resultText += "Try:\n";
+        resultText += "- Increasing the search radius\n";
+        resultText += "- Selecting 'All Categories'\n";
+        resultText += "- Moving to a different location\n";
+    } else {
+        resultText += QString("Found %1 POIs - Click below to view on map").arg(results.size());
+        
+        // Add to list widget with distance
+        for (size_t i = 0; i < results.size(); ++i) {
+            const POI& poi = results[i];
+            
+            // Calculate distance from search center
+            double distance = calculateDistance(searchLat, searchLon, poi.latitude, poi.longitude);
+            
+            QString listItem = QString("%1 - %2 km (%3)")
+                .arg(QString::fromStdString(poi.name))
+                .arg(distance, 0, 'f', 2)
+                .arg(QString::fromStdString(poi.category));
+            m_poiResultsList->addItem(listItem);
+        }
+        
+        resultText += QString("\n⚡ Query time: %1 ms").arg(queryTimeMs, 0, 'f', 3);
+    }
+    
+    m_poiResultsText->setPlainText(resultText);
+}
+
+void NavigationMainWindow::onGeocodeAddress()
+{
+    if (!m_poiService || !m_poiService->isServiceReady()) {
+        m_poiResultsText->setPlainText("ERROR: POI Service not ready!");
+        return;
+    }
+    
+    QString address = m_addressEdit->text().trimmed();
+    if (address.isEmpty()) {
+        m_poiResultsText->setPlainText("WARNING: Please enter an address to geocode.");
+        return;
+    }
+    
+    m_poiResultsText->setPlainText(QString("Geocoding address: '%1'...\n").arg(address));
+    
+    // Create address request
+    AddressRequest request;
+    request.street_name = address.toStdString();
+    request.city = "Hanoi";
+    request.state = "Vietnam";
+    request.country = "VN";
+    
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
+    // Perform geocoding
+    GeocodingResult result = m_poiService->geocodeAddress(request);
+    
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+    double queryTimeMs = duration.count() / 1000.0;
+    
+    // Display geocoding results
+    QString resultText = QString(
+        "ADDRESS GEOCODING RESULTS\n"
+        "============================\n"
+        "Input address: '%1'\n"
+        "Processing time: %2 ms\n\n"
+    ).arg(address).arg(queryTimeMs, 0, 'f', 3);
+    
+    if (result.success) {
+        resultText += QString(
+            "GEOCODING SUCCESSFUL!\n\n"
+            "Coordinates:\n"
+            "   Latitude: %1\n"
+            "   Longitude: %2\n\n"
+            "Standardized Address:\n"
+            "   %3\n\n"
+            "Accuracy Metrics:\n"
+            "   Confidence Score: %4\n"
+            "   Match Type: %5\n\n"
+            "WGS84 Coordinate System\n"
+            "   Precision: 6 decimal places (approx 1m accuracy)\n"
+            "   Projection: Geographic (lat/lon)\n"
+        ).arg(result.latitude, 0, 'f', 6)
+         .arg(result.longitude, 0, 'f', 6)
+         .arg(QString::fromStdString(result.standard_address))
+         .arg(result.accuracy, 0, 'f', 2)
+         .arg(QString::fromStdString(result.match_type));
+        
+        // Option to set as destination
+        resultText += "\nYou can now use these coordinates for navigation!";
+        
+    } else {
+        resultText += QString(
+            "GEOCODING FAILED\n\n"
+            "Possible reasons:\n"
+            "- Address format not recognized\n"
+            "- Incomplete address information\n"
+            "- Address not found in database\n\n"
+            "Try:\n"
+            "- More specific address details\n"
+            "- Standard address format\n"
+            "- Known landmark names\n"
+        );
+    }
+    
+    m_poiResultsText->setPlainText(resultText);
+}
+
+// POI Service Signal Handlers - TODO: Implement when POI service signals are ready
+void NavigationMainWindow::onPOIDataLoaded()
+{
+    // TODO: POIService doesn't emit signals yet
+    qDebug() << "POI data loaded callback";
+}
+
+void NavigationMainWindow::onPOISearchCompleted(const std::vector<POI>& results)
+{
+    qDebug() << "POI search completed:" << results.size() << "results";
+}
+
+void NavigationMainWindow::onAddressGeocoded(const GeocodingResult& result)
+{
+    qDebug() << "Address geocoded. Success:" << result.success;
+}
+
 void NavigationMainWindow::onSetClickedAsStartPoint()
 {
     if (!m_hasLastClickedPosition) {
@@ -1160,11 +1590,11 @@ void NavigationMainWindow::onSimulationTimer()
         // Reached destination
         onStopGuidance();
         QMessageBox::information(this, "Navigation", 
-            QString("🎯 Destination Reached!\n\nYou have successfully arrived at your destination.\n"
+            QString("Destination Reached!\n\nYou have successfully arrived at your destination.\n"
                    "Final position: %1, %2")
             .arg(m_currentPosition.latitude, 0, 'f', 6)
             .arg(m_currentPosition.longitude, 0, 'f', 6));
-        statusBar()->showMessage("🎯 Destination reached successfully!", 5000);
+        statusBar()->showMessage("Destination reached successfully!", 5000);
     }
     
     qDebug() << "Position updated to:" << m_currentPosition.latitude << "," << m_currentPosition.longitude 
@@ -1204,6 +1634,182 @@ void NavigationMainWindow::checkAndStopGuidance()
     if (m_guidanceRunning) {
         onStopGuidance();
         statusBar()->showMessage("Guidance stopped due to route change", 3000);
+    }
+}
+
+//Todo: MapWidget supports POI display
+
+void NavigationMainWindow::onPOIResultSelected(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_lastSearchResults.size())) {
+        return;
+    }
+    
+    const POI& selectedPOI = m_lastSearchResults[index];
+    
+    // Show POI on map
+    showPOIOnMap(selectedPOI);
+    
+    // Update results text with detailed info
+    QString detailText = QString(
+        "SELECTED POI DETAILS\n"
+        "======================\n\n"
+        "Name: %1\n"
+        "Category: %2\n"
+        "Coordinates:\n"
+        "   Latitude: %3\n"
+        "   Longitude: %4\n"
+        "Address: %5\n\n"
+        "You can set this as destination!"
+    ).arg(QString::fromStdString(selectedPOI.name))
+     .arg(QString::fromStdString(selectedPOI.category))
+     .arg(selectedPOI.latitude, 0, 'f', 6)
+     .arg(selectedPOI.longitude, 0, 'f', 6)
+     .arg(QString::fromStdString(selectedPOI.address));
+    
+    m_poiResultsText->setPlainText(detailText);
+    
+    qDebug() << "POI selected:" << QString::fromStdString(selectedPOI.name) 
+             << "at" << selectedPOI.latitude << "," << selectedPOI.longitude;
+}
+
+void NavigationMainWindow::showPOIOnMap(const POI& poi)
+{
+    MapWidget* mapWidget = qobject_cast<MapWidget*>(m_mapRenderer);
+    if (!mapWidget) {
+        return;
+    }
+    
+    // Create Point from POI
+    Point poiLocation(poi.latitude, poi.longitude);
+    
+    // Center map on POI location with smooth animation
+    mapWidget->centerMap(poi.latitude, poi.longitude);
+    
+    // Show POI as a special marker (reuse clicked point for now)
+    mapWidget->setClickedPoint(poiLocation);
+    m_endLatEdit->setText(QString::number(poi.latitude, 'f', 6));
+    m_endLonEdit->setText(QString::number(poi.longitude, 'f', 6));
+    
+    // Set POI name label to display on map
+    QString poiLabel = QString("%1").arg(QString::fromStdString(poi.name));
+    mapWidget->setPOILabel(poiLabel);
+    
+    // Calculate distance from current position if available
+    QString distanceInfo = "";
+    if (m_hasCurrentPosition) {
+        double distance = calculateDistance(
+            m_currentPosition.latitude, m_currentPosition.longitude,
+            poi.latitude, poi.longitude
+        );
+        distanceInfo = QString("\nDistance from current position: %1 km").arg(distance, 0, 'f', 2);
+    }
+    
+    // Update POI results text with detailed information
+    QString detailText = QString(
+        "POI DISPLAYED ON MAP\n"
+        "======================\n\n"
+        "Name: %1\n"
+        "Category: %2\n"
+        "Location:\n"
+        "   Latitude: %3\n"
+        "   Longitude: %4\n"
+        "Address: %5%6\n\n"
+        "POI is now centered on the map with a marker.\n"
+        "You can set this location as Start or Destination point!"
+    ).arg(QString::fromStdString(poi.name))
+     .arg(QString::fromStdString(poi.category))
+     .arg(poi.latitude, 0, 'f', 6)
+     .arg(poi.longitude, 0, 'f', 6)
+     .arg(QString::fromStdString(poi.address))
+     .arg(distanceInfo);
+    
+    m_poiResultsText->setPlainText(detailText);
+    
+    // Show status message with POI name
+    statusBar()->showMessage(QString("Showing POI: %1 | Category: %2 | Click to set as waypoint")
+                            .arg(QString::fromStdString(poi.name))
+                            .arg(QString::fromStdString(poi.category)), 8000);
+    
+    qDebug() << "POI displayed on map:" << QString::fromStdString(poi.name) 
+             << "at (" << poi.latitude << "," << poi.longitude << ")";
+}
+
+void NavigationMainWindow::onToggleLeftPanel()
+{
+    m_leftPanelCollapsed = !m_leftPanelCollapsed;
+    
+    if (m_leftPanelCollapsed) {
+        // Hide left panel
+        m_leftPanelContainer->hide();
+        m_toggleLeftPanelButton->setText("> Show Controls");
+        m_toggleLeftPanelButton->setStyleSheet(
+            "QPushButton { "
+            "   background-color: #FF9800; "
+            "   color: white; "
+            "   font-weight: bold; "
+            "   border-radius: 5px; "
+            "   padding: 5px; "
+            "}"
+            "QPushButton:hover { background-color: #F57C00; }"
+        );
+        statusBar()->showMessage("Left panel collapsed - More space for map!", 3000);
+        qDebug() << "Left panel collapsed";
+    } else {
+        // Show left panel
+        m_leftPanelContainer->show();
+        m_toggleLeftPanelButton->setText("< Hide Controls");
+        m_toggleLeftPanelButton->setStyleSheet(
+            "QPushButton { "
+            "   background-color: #2196F3; "
+            "   color: white; "
+            "   font-weight: bold; "
+            "   border-radius: 5px; "
+            "   padding: 5px; "
+            "}"
+            "QPushButton:hover { background-color: #1976D2; }"
+        );
+        statusBar()->showMessage("Left panel expanded", 3000);
+        qDebug() << "Left panel expanded";
+    }
+}
+
+void NavigationMainWindow::onToggleRightPanel()
+{
+    m_rightPanelCollapsed = !m_rightPanelCollapsed;
+    
+    if (m_rightPanelCollapsed) {
+        // Hide right panel
+        m_rightPanelContainer->hide();
+        m_toggleRightPanelButton->setText("< Show Info");
+        m_toggleRightPanelButton->setStyleSheet(
+            "QPushButton { "
+            "   background-color: #FF9800; "
+            "   color: white; "
+            "   font-weight: bold; "
+            "   border-radius: 5px; "
+            "   padding: 5px; "
+            "}"
+            "QPushButton:hover { background-color: #F57C00; }"
+        );
+        statusBar()->showMessage("Right panel collapsed - More space for map!", 3000);
+        qDebug() << "Right panel collapsed";
+    } else {
+        // Show right panel
+        m_rightPanelContainer->show();
+        m_toggleRightPanelButton->setText("Hide Info >");
+        m_toggleRightPanelButton->setStyleSheet(
+            "QPushButton { "
+            "   background-color: #4CAF50; "
+            "   color: white; "
+            "   font-weight: bold; "
+            "   border-radius: 5px; "
+            "   padding: 5px; "
+            "}"
+            "QPushButton:hover { background-color: #45a049; }"
+        );
+        statusBar()->showMessage("Right panel expanded", 3000);
+        qDebug() << "Right panel expanded";
     }
 }
 
