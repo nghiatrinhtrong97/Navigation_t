@@ -23,6 +23,16 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         services/geocoding/include/address_normalizer.h
         services/geocoding/include/spatial_index.h
         
+        # Service Cores - Phase 2: Fuzzy Matching
+        services/geocoding/fuzzy/include/string_matcher.h
+        services/geocoding/fuzzy/include/fuzzy_address_matcher.h
+        
+        # Service Cores - Phase 2: Caching
+        services/geocoding/cache/include/geocoding_cache.h
+        
+        # Service Cores - Phase 2: Batch Processing
+        services/geocoding/batch/include/batch_geocoder.h
+        
         # Service Cores - POI
         services/poi/include/poi_service.h
         
@@ -57,6 +67,16 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         services/geocoding/src/address_parser.cpp
         services/geocoding/src/address_normalizer.cpp
         services/geocoding/src/spatial_index.cpp
+        
+        # Service Cores - Phase 2: Fuzzy Matching
+        services/geocoding/fuzzy/src/string_matcher.cpp
+        services/geocoding/fuzzy/src/fuzzy_address_matcher.cpp
+        
+        # Service Cores - Phase 2: Caching
+        services/geocoding/cache/src/geocoding_cache.cpp
+        
+        # Service Cores - Phase 2: Batch Processing
+        services/geocoding/batch/src/batch_geocoder.cpp
         
         # Service Cores - POI
         services/poi/src/poi_service.cpp
@@ -96,6 +116,9 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         ${CMAKE_CURRENT_SOURCE_DIR}/ui/include
         ${CMAKE_CURRENT_SOURCE_DIR}/controllers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/services/geocoding/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/geocoding/fuzzy/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/geocoding/cache/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/geocoding/batch/include
         ${CMAKE_CURRENT_SOURCE_DIR}/services/poi/include
         ${CMAKE_CURRENT_SOURCE_DIR}/services/routing/include
         ${CMAKE_CURRENT_SOURCE_DIR}/services/guidance/include

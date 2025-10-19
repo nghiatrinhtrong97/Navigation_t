@@ -2,6 +2,9 @@
 #include "address_parser.h"  // Will be found via geocoding include path
 #include "address_normalizer.h"  // Will be found via geocoding include path
 #include "spatial_index.h"  // Will be found via geocoding include path
+#include "fuzzy_address_matcher.h"  // Phase 2
+#include "geocoding_cache.h"  // Phase 2
+#include "batch_geocoder.h"  // Phase 2
 #include <QFile>
 #include <QIODevice>
 #include <QJsonDocument>
@@ -23,6 +26,9 @@ POIService::POIService(QObject* parent)
     , m_lastQueryTimeMs(0.0)
     , m_spatialIndex(nullptr)
     , m_useEnhancedGeocoding(true)
+    , m_fuzzyMatcher(nullptr)
+    , m_geocodingCache(nullptr)
+    , m_batchGeocoder(nullptr)
 {
     // Constructor implementation
 }
@@ -45,6 +51,20 @@ bool POIService::initialize()
     if (m_useEnhancedGeocoding && !m_poiDatabase.empty()) {
         buildSpatialIndex();
     }
+    
+    // Phase 2: Initialize fuzzy matcher and cache
+    m_fuzzyMatcher = std::make_unique<::geocoding::fuzzy::FuzzyAddressMatcher>();
+    m_geocodingCache = std::make_unique<::geocoding::cache::InMemoryGeocodingCache>(
+        1000,  // max 1000 entries
+        3600   // 1 hour TTL
+    );
+    
+    // Initialize batch geocoder with lambda function
+    m_batchGeocoder = std::make_unique<::geocoding::batch::BatchGeocoder>(
+        [this](const geocoding::EnhancedAddressRequest& request) {
+            return this->geocodeAddressEnhanced(request);
+        }
+    );
     
     m_initialized = true;
     m_serviceReady = true;
@@ -292,6 +312,29 @@ geocoding::EnhancedGeocodingResult POIService::geocodeAddressEnhanced(
     auto start_time = std::chrono::high_resolution_clock::now();
     geocoding::EnhancedGeocodingResult result;
     
+    // Phase 2: Check cache first
+    std::string cache_key;
+    if (request.freeform_address.has_value()) {
+        cache_key = *request.freeform_address;
+    } else if (request.components.has_value()) {
+        cache_key = request.components->toFormattedString("display");
+    }
+    
+    if (!cache_key.empty() && m_geocodingCache) {
+        auto cached_result = m_geocodingCache->get(cache_key);
+        if (cached_result.has_value()) {
+            qDebug() << "[POI SERVICE] Cache hit for:" << cache_key.c_str();
+            auto cached_value = cached_result.value();
+            cached_value.used_cache = true;
+            
+            auto end_time = std::chrono::high_resolution_clock::now();
+            cached_value.processing_time_ms = std::chrono::duration<double, std::milli>(
+                end_time - start_time).count();
+            
+            return cached_value;
+        }
+    }
+    
     // Step 1: Parse address (if freeform text)
     geocoding::AddressComponents parsed_components;
     
@@ -331,14 +374,70 @@ geocoding::EnhancedGeocodingResult POIService::geocodeAddressEnhanced(
         return result;
     }
     
-    // Step 4: Query spatial index
+    // Step 4: Query spatial index with exact match
+    bool found_exact_match = false;
     if (m_spatialIndex && m_spatialIndex->isReady()) {
         result.primary_result = matchAddressWithSpatialIndex(
             parsed_components, request);
+        found_exact_match = (result.primary_result.confidence_score >= 0.95);
         result.success = (result.primary_result.confidence_score > 0.0);
-    } else {
-        // Fallback to legacy method
-        qWarning() << "[POI SERVICE] Spatial index not available, using legacy geocoding";
+    }
+    
+    // Phase 2: Step 5: Try fuzzy matching if no exact match
+    if (!found_exact_match && m_fuzzyMatcher) {
+        qDebug() << "[POI SERVICE] Trying fuzzy matching...";
+        
+        // Convert POI database to address components for fuzzy matching
+        std::vector<geocoding::AddressComponents> candidates;
+        candidates.reserve(m_poiDatabase.size());
+        
+        auto& parser = geocoding::AddressParser::getInstance();
+        for (const auto& poi : m_poiDatabase) {
+            try {
+                geocoding::AddressComponents candidate = parser.parse(poi.address, "VN");
+                candidates.push_back(candidate);
+            } catch (...) {
+                // Skip invalid addresses
+            }
+        }
+        
+        // Find best fuzzy matches
+        auto fuzzy_matches = m_fuzzyMatcher->findBestMatches(
+            parsed_components, candidates, 5);
+        
+        if (!fuzzy_matches.empty()) {
+            const auto& best_match = fuzzy_matches[0];
+            qDebug() << "[POI SERVICE] Fuzzy match found with score:" 
+                     << best_match.second.overall_score;
+            
+            // Update result with fuzzy match if better than exact match
+            if (best_match.second.overall_score > result.primary_result.confidence_score) {
+                // Find corresponding POI coordinates
+                for (const auto& poi : m_poiDatabase) {
+                    try {
+                        geocoding::AddressComponents poi_components = parser.parse(poi.address, "VN");
+                        if (poi_components.toFormattedString("display") == 
+                            best_match.first.toFormattedString("display")) {
+                            result.primary_result.latitude = poi.latitude;
+                            result.primary_result.longitude = poi.longitude;
+                            result.primary_result.formatted_address = poi.address;
+                            result.primary_result.confidence_score = best_match.second.overall_score;
+                            result.primary_result.match_type = "fuzzy_match";
+                            result.primary_result.geocoding_method = "fuzzy_address_matching";
+                            result.success = true;
+                            break;
+                        }
+                    } catch (...) {
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fallback to legacy method if still no match
+    if (!result.success) {
+        qWarning() << "[POI SERVICE] Using legacy geocoding fallback";
         
         AddressRequest legacyReq;
         if (parsed_components.house_number) legacyReq.street_number = *parsed_components.house_number;
@@ -363,7 +462,7 @@ geocoding::EnhancedGeocodingResult POIService::geocodeAddressEnhanced(
         }
     }
     
-    // Step 5: Calculate performance metrics
+    // Step 6: Calculate performance metrics
     auto end_time = std::chrono::high_resolution_clock::now();
     result.processing_time_ms = std::chrono::duration<double, std::milli>(
         end_time - start_time).count();
@@ -371,6 +470,11 @@ geocoding::EnhancedGeocodingResult POIService::geocodeAddressEnhanced(
     result.candidates_evaluated = m_poiDatabase.size();
     
     m_lastQueryTimeMs = result.processing_time_ms;
+    
+    // Phase 2: Cache successful results
+    if (result.success && m_geocodingCache && !cache_key.empty()) {
+        m_geocodingCache->put(cache_key, result);
+    }
     
     if (result.success) {
         qDebug() << "[POI SERVICE] Geocoding succeeded in" << result.processing_time_ms 
@@ -454,6 +558,60 @@ geocoding::AddressComponents POIService::reverseGeocodeEnhanced(
     }
     
     return result;
+}
+
+// ============================================================================
+// Phase 2: Batch Geocoding & Cache Management
+// ============================================================================
+
+::geocoding::batch::BatchGeocodingResult POIService::geocodeAddressesBatch(
+    const std::vector<geocoding::EnhancedAddressRequest>& addresses,
+    bool parallel) {
+    
+    if (!m_batchGeocoder) {
+        ::geocoding::batch::BatchGeocodingResult result;
+        result.total_count = addresses.size();
+        result.failed_count = addresses.size();
+        return result;
+    }
+    
+    ::geocoding::batch::BatchGeocodingRequest batch_request;
+    batch_request.addresses = addresses;
+    batch_request.parallel_processing = parallel;
+    batch_request.max_threads = 4;
+    
+    // Add progress callback
+    batch_request.progress_callback = [](size_t completed, size_t total) {
+        qDebug() << "[POI SERVICE] Batch geocoding progress:" 
+                 << completed << "/" << total;
+    };
+    
+    qDebug() << "[POI SERVICE] Starting batch geocoding of" 
+             << addresses.size() << "addresses (parallel=" << parallel << ")";
+    
+    auto result = m_batchGeocoder->processBatch(batch_request);
+    
+    qDebug() << "[POI SERVICE] Batch geocoding complete:"
+             << "Success:" << result.success_count
+             << "Failed:" << result.failed_count
+             << "Time:" << result.elapsed_seconds << "s"
+             << "Throughput:" << result.throughput_per_second << "addr/s";
+    
+    return result;
+}
+
+::geocoding::cache::CacheStats POIService::getCacheStats() const {
+    if (m_geocodingCache) {
+        return m_geocodingCache->getStats();
+    }
+    return ::geocoding::cache::CacheStats();
+}
+
+void POIService::clearCache() {
+    if (m_geocodingCache) {
+        m_geocodingCache->clear();
+        qDebug() << "[POI SERVICE] Geocoding cache cleared";
+    }
 }
 
 } // namespace nav

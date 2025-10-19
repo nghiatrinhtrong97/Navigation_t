@@ -19,6 +19,21 @@ namespace geocoding {
 }
 }
 
+// Forward declarations for Phase 2 components
+namespace geocoding {
+namespace fuzzy {
+    class FuzzyAddressMatcher;
+}
+namespace cache {
+    class InMemoryGeocodingCache;
+    struct CacheStats;
+}
+namespace batch {
+    class BatchGeocoder;
+    struct BatchGeocodingResult;
+}
+}
+
 namespace nav {
 
 // Point struct is now from navigation_models.h
@@ -122,6 +137,28 @@ public:
      */
     geocoding::AddressComponents reverseGeocodeEnhanced(
         double latitude, double longitude);
+    
+    // === Phase 2: Fuzzy Matching & Batch API ===
+    /**
+     * @brief Batch geocode multiple addresses in parallel
+     * @param addresses Vector of address requests
+     * @param parallel Enable parallel processing
+     * @return Batch results with statistics
+     */
+    ::geocoding::batch::BatchGeocodingResult geocodeAddressesBatch(
+        const std::vector<geocoding::EnhancedAddressRequest>& addresses,
+        bool parallel = true);
+    
+    /**
+     * @brief Get cache statistics
+     * @return Cache hit rate and performance metrics
+     */
+    ::geocoding::cache::CacheStats getCacheStats() const;
+    
+    /**
+     * @brief Clear geocoding cache
+     */
+    void clearCache();
 
 private:
     //Core service state
@@ -135,6 +172,11 @@ private:
     // Phase 1: Enhanced Geocoding Components
     std::unique_ptr<geocoding::SpatialIndex> m_spatialIndex;
     bool m_useEnhancedGeocoding;
+    
+    // Phase 2: Fuzzy Matching & Caching
+    std::unique_ptr<::geocoding::fuzzy::FuzzyAddressMatcher> m_fuzzyMatcher;
+    std::unique_ptr<::geocoding::cache::InMemoryGeocodingCache> m_geocodingCache;
+    std::unique_ptr<::geocoding::batch::BatchGeocoder> m_batchGeocoder;
     
     // Helper methods
     void loadPOIDatabase();
