@@ -2,11 +2,11 @@
 
 #include "../../models/include/navigation_models.h"
 #include "nav_messages.h"
-#include "../../services/include/positioning_service_core.h"
-#include "../../services/include/routing_service_core.h"
-#include "../../services/include/guidance_service_core.h"
-#include "../../services/include/map_service_core.h"
-#include "../../services/include/poi_service.h"
+#include "../../services/positioning/include/positioning_service_core.h"
+#include "../../services/routing/include/routing_service_core.h"
+#include "../../services/guidance/include/guidance_service_core.h"
+#include "../../services/map/include/map_service_core.h"
+#include "../../services/poi/include/poi_service.h"
 #include <QObject>
 #include <QTimer>
 #include <QMutex>

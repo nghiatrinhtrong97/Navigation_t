@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../models/include/navigation_models.h"
-#include "poi_service.h"  // Include POI struct from poi_service
+#include "poi_service.h"  // Will be found via include path
 #include <QObject>
 #include <QTimer>
 #include <vector>

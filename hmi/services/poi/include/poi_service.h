@@ -8,8 +8,8 @@
 #include <vector>
 #include <memory>
 #include "../../models/include/navigation_models.h"  // Use Point from navigation_models
-#include "address_components.h"
-#include "enhanced_geocoding.h"
+#include "address_components.h"  // Will be found via geocoding include path
+#include "enhanced_geocoding.h"  // Will be found via geocoding include path
 
 // Forward declarations for Phase 1 components
 namespace nav {

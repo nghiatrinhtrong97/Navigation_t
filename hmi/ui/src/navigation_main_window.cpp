@@ -343,6 +343,9 @@ void NavigationMainWindow::setupControlPanel(QVBoxLayout* parentLayout)
     
     // Add Guidance Control Panel  
     setupGuidanceControlPanel(parentLayout);
+
+//    Add POI Test Panel
+    setupPOITestPanel(parentLayout);
 }
 
 void NavigationMainWindow::setupInfoPanel(QVBoxLayout* parentLayout)
@@ -384,6 +387,58 @@ void NavigationMainWindow::setupInfoPanel(QVBoxLayout* parentLayout)
     layout->addWidget(m_mouseLonLabel);
 
     //Needtodo
+    
+    // Add POI Results Section
+    QLabel *poiSeparator = new QLabel("--- POI Search Results ---");
+    poiSeparator->setStyleSheet("QLabel { font-weight: bold; color: green; margin-top: 10px; }");
+    layout->addWidget(poiSeparator);
+    
+    // POI Results Display
+    m_poiResultsText = new QTextEdit();
+    m_poiResultsText->setMaximumHeight(120);
+    m_poiResultsText->setStyleSheet(
+        "QTextEdit { "
+        "   font-family: 'Consolas', 'Monaco', monospace; "
+        "   font-size: 8pt; "
+        "   background-color: #f5f5f5; "
+        "   color: #000000; "
+        "   border: 1px solid #ddd; "
+        "   padding: 5px; "
+        "}"
+    );
+    m_poiResultsText->setPlainText("POI Service Ready\nSearch to see results...");
+    layout->addWidget(m_poiResultsText);
+    
+    // POI Results List (clickable)
+    QLabel *poiListLabel = new QLabel("Click to view on map:");
+    poiListLabel->setStyleSheet("QLabel { font-weight: bold; color: #2196F3; margin-top: 5px; }");
+    layout->addWidget(poiListLabel);
+    
+    m_poiResultsList = new QListWidget();
+    m_poiResultsList->setMaximumHeight(150);
+    m_poiResultsList->setStyleSheet(
+        "QListWidget { "
+        "   font-size: 9pt; "
+        "   background-color: white; "
+        "   color: black; "
+        "   border: 1px solid #ccc; "
+        "}"
+        "QListWidget::item { "
+        "   color: black; "
+        "}"
+        "QListWidget::item:selected { "
+        "   background-color: #2196F3; "
+        "   color: white; "
+        "}"
+        "QListWidget::item:hover { "
+        "   background-color: #e3f2fd; "
+        "   color: black; "
+        "}"
+    );
+    layout->addWidget(m_poiResultsList);
+    
+    // Connect POI list selection
+    connect(m_poiResultsList, &QListWidget::currentRowChanged, this, &NavigationMainWindow::onPOIResultSelected);
     
     // Add a stretch to push content to top
     layout->addStretch();
@@ -810,103 +865,109 @@ void NavigationMainWindow::onMapClicked(const Point& position)
 
 void NavigationMainWindow::setupPOITestPanel(QVBoxLayout* parentLayout)
 {
-    // m_poiTestGroup = new QGroupBox("POI Service Testing Panel");
-    // m_poiTestGroup->setStyleSheet(
-    //     "QGroupBox { font-weight: bold; color: #2E8B57; }"
-    //     "QGroupBox::title { color: #2E8B57; }"
-    // );
-    // QVBoxLayout *layout = new QVBoxLayout(m_poiTestGroup);
+    m_poiTestGroup = new QGroupBox("POI Service Testing Panel");
+    m_poiTestGroup->setStyleSheet(
+        "QGroupBox { font-weight: bold; color: #2E8B57; }"
+        "QGroupBox::title { color: #2E8B57; }"
+    );
+    QVBoxLayout *layout = new QVBoxLayout(m_poiTestGroup);
     
-    // // POI Service Status
-    // m_poiStatusLabel = new QLabel("POI Service Status: Initializing...");
-    // m_poiStatusLabel->setStyleSheet("QLabel { color: #FF6600; font-weight: bold; }");
-    // layout->addWidget(m_poiStatusLabel);
+    // POI Service Status
+    m_poiStatusLabel = new QLabel("POI Service Status: Initializing...");
+    m_poiStatusLabel->setStyleSheet("QLabel { color: #FF6600; font-weight: bold; }");
+    layout->addWidget(m_poiStatusLabel);
     
-    // // Load POI Data Section
-    // QHBoxLayout *loadLayout = new QHBoxLayout();
-    // loadLayout->addWidget(new QLabel("Data Management:"));
-    // m_poiLoadDataButton = new QPushButton("Load Sample POI Data");
-    // m_poiLoadDataButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }");
-    // loadLayout->addWidget(m_poiLoadDataButton);
-    // layout->addLayout(loadLayout);
+    // Load POI Data Section
+    QHBoxLayout *loadLayout = new QHBoxLayout();
+    loadLayout->addWidget(new QLabel("Data Management:"));
+    m_poiLoadDataButton = new QPushButton("Load Sample POI Data");
+    m_poiLoadDataButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }");
+    loadLayout->addWidget(m_poiLoadDataButton);
+    layout->addLayout(loadLayout);
     
-    // // POI Search by Name Section
-    // QHBoxLayout *searchLayout = new QHBoxLayout();
-    // searchLayout->addWidget(new QLabel("Search POI:"));
-    // m_poiSearchEdit = new QLineEdit();
-    // m_poiSearchEdit->setPlaceholderText("Enter POI name (e.g., 'Pho 24', 'Shell')");
-    // m_poiSearchEdit->setMinimumWidth(600);  // Chiều rộng tối thiểu 300 pixels
-    // m_poiSearchEdit->setStyleSheet(
-    //     "QLineEdit { "
-    //     "   background-color: white; "
-    //     "   color: black; "
-    //     "   border: 1px solid #ccc; "
-    //     "   padding: 5px; "
-    //     "}"
-    // );
-    // m_poiSearchButton = new QPushButton("Search by Name");
-    // searchLayout->addWidget(m_poiSearchEdit);  // Stretch factor 4 để chiếm nhiều không gian
-    // searchLayout->addWidget(m_poiSearchButton);
-    // layout->addLayout(searchLayout);
+    // POI Search by Name Section
+    QHBoxLayout *searchLayout = new QHBoxLayout();
+    searchLayout->addWidget(new QLabel("Search POI:"));
+    m_poiSearchEdit = new QLineEdit();
+    m_poiSearchEdit->setPlaceholderText("Enter POI name (e.g., 'Pho 24', 'Shell')");
+    m_poiSearchEdit->setMinimumWidth(600);  // Chiều rộng tối thiểu 300 pixels
+    m_poiSearchEdit->setStyleSheet(
+        "QLineEdit { "
+        "   background-color: white; "
+        "   color: black; "
+        "   border: 1px solid #ccc; "
+        "   padding: 5px; "
+        "}"
+    );
+    m_poiSearchButton = new QPushButton("Search by Name");
+    searchLayout->addWidget(m_poiSearchEdit);  // Stretch factor 4 để chiếm nhiều không gian
+    searchLayout->addWidget(m_poiSearchButton);
+    layout->addLayout(searchLayout);
     
-    // // POI Nearby Search Section
-    // QHBoxLayout *nearbyLayout = new QHBoxLayout();
-    // nearbyLayout->addWidget(new QLabel("Category:"));
-    // m_poiCategoryCombo = new QComboBox();
-    // m_poiCategoryCombo->addItems({
-    //     "All Categories", "gas_station", "restaurant", "hospital", "bank", "parking"
-    // });
-    // nearbyLayout->addWidget(m_poiCategoryCombo);
+    // POI Nearby Search Section
+    QHBoxLayout *nearbyLayout = new QHBoxLayout();
+    nearbyLayout->addWidget(new QLabel("Category:"));
+    m_poiCategoryCombo = new QComboBox();
+    m_poiCategoryCombo->addItems({
+        "All Categories", "gas_station", "restaurant", "hospital", "bank", "parking"
+    });
+    nearbyLayout->addWidget(m_poiCategoryCombo);
     
-    // nearbyLayout->addWidget(new QLabel("Radius (km):"));
-    // m_poiRadiusSpinBox = new QSpinBox();
-    // m_poiRadiusSpinBox->setRange(1, 50);
-    // m_poiRadiusSpinBox->setValue(5);
-    // m_poiRadiusSpinBox->setSuffix(" km");
-    // nearbyLayout->addWidget(m_poiRadiusSpinBox);
+    nearbyLayout->addWidget(new QLabel("Radius (km):"));
+    m_poiRadiusSpinBox = new QSpinBox();
+    m_poiRadiusSpinBox->setRange(1, 50);
+    m_poiRadiusSpinBox->setValue(5);
+    m_poiRadiusSpinBox->setSuffix(" km");
+    nearbyLayout->addWidget(m_poiRadiusSpinBox);
     
-    // m_poiNearbyButton = new QPushButton("Find Nearby");
-    // m_poiNearbyButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; }");
-    // nearbyLayout->addWidget(m_poiNearbyButton);
-    // layout->addLayout(nearbyLayout);
+    m_poiNearbyButton = new QPushButton("Find Nearby");
+    m_poiNearbyButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; }");
+    nearbyLayout->addWidget(m_poiNearbyButton);
+    layout->addLayout(nearbyLayout);
 
-    // // Needtodo
+    // Needtodo
     
-    // // Address Geocoding Section
-    // QHBoxLayout *geocodeLayout = new QHBoxLayout();
-    // geocodeLayout->addWidget(new QLabel("Address:"));
-    // m_addressEdit = new QLineEdit();
-    // m_addressEdit->setPlaceholderText("Enter address to geocode");
-    // m_addressEdit->setStyleSheet(
-    //     "QLineEdit { "
-    //     "   background-color: white; "
-    //     "   color: black; "
-    //     "   border: 1px solid #ccc; "
-    //     "   padding: 5px; "
-    //     "}"
-    // );
-    // m_geocodeButton = new QPushButton("🏠 Geocode Address");
-    // m_geocodeButton->setStyleSheet("QPushButton { background-color: #FF9800; color: white; }");
-    // geocodeLayout->addWidget(m_addressEdit);
-    // geocodeLayout->addWidget(m_geocodeButton);
-    // layout->addLayout(geocodeLayout);
+    // Address Geocoding Section
+    QHBoxLayout *geocodeLayout = new QHBoxLayout();
+    geocodeLayout->addWidget(new QLabel("Address:"));
+    m_addressEdit = new QLineEdit();
+    m_addressEdit->setPlaceholderText("Enter address to geocode");
+    m_addressEdit->setStyleSheet(
+        "QLineEdit { "
+        "   background-color: white; "
+        "   color: black; "
+        "   border: 1px solid #ccc; "
+        "   padding: 5px; "
+        "}"
+    );
+    m_geocodeButton = new QPushButton("🏠 Geocode Address");
+    m_geocodeButton->setStyleSheet("QPushButton { background-color: #FF9800; color: white; }");
+    geocodeLayout->addWidget(m_addressEdit);
+    geocodeLayout->addWidget(m_geocodeButton);
+    layout->addLayout(geocodeLayout);
     
-    // // Note: Results are now displayed in Information panel (right column)
+    // Note: Results are now displayed in Information panel (right column)
     
-    // // Connect signals
+    // Connect signals
+    connect(m_poiLoadDataButton, &QPushButton::clicked, this, &NavigationMainWindow::onPOILoadData);
+    connect(m_poiSearchButton, &QPushButton::clicked, this, &NavigationMainWindow::onPOISearch);
+    connect(m_poiNearbyButton, &QPushButton::clicked, this, &NavigationMainWindow::onPOINearbySearch);
+    connect(m_geocodeButton, &QPushButton::clicked, this, &NavigationMainWindow::onGeocodeAddress);
+    connect(m_poiSearchEdit, &QLineEdit::returnPressed, this, &NavigationMainWindow::onPOISearch);
+    connect(m_addressEdit, &QLineEdit::returnPressed, this, &NavigationMainWindow::onGeocodeAddress);
     
-    // // Update POI service status
-    // if (m_poiService && m_poiService->isServiceReady()) {
-    //     m_poiStatusLabel->setText("POI Service Status: Ready");
-    //     m_poiStatusLabel->setStyleSheet("QLabel { color: #2E8B57; font-weight: bold; }");
-    // } else {
-    //     m_poiStatusLabel->setText("POI Service Status: Not Ready");
-    //     m_poiStatusLabel->setStyleSheet("QLabel { color: #DC143C; font-weight: bold; }");
-    // }
+    // Update POI service status
+    if (m_poiService && m_poiService->isServiceReady()) {
+        m_poiStatusLabel->setText("POI Service Status: Ready");
+        m_poiStatusLabel->setStyleSheet("QLabel { color: #2E8B57; font-weight: bold; }");
+    } else {
+        m_poiStatusLabel->setText("POI Service Status: Not Ready");
+        m_poiStatusLabel->setStyleSheet("QLabel { color: #DC143C; font-weight: bold; }");
+    }
     
-    // if (parentLayout) {
-    //     parentLayout->addWidget(m_poiTestGroup);
-    // }
+    if (parentLayout) {
+        parentLayout->addWidget(m_poiTestGroup);
+    }
 }
 
 void NavigationMainWindow::onSimulationSpeedChanged(int speed)
@@ -1398,65 +1459,99 @@ void NavigationMainWindow::onGeocodeAddress()
     
     m_poiResultsText->setPlainText(QString("Geocoding address: '%1'...\n").arg(address));
     
-    // Create address request
-    AddressRequest request;
-    request.street_name = address.toStdString();
-    request.city = "Hanoi";
-    request.state = "Vietnam";
-    request.country = "VN";
-    
     auto startTime = std::chrono::high_resolution_clock::now();
     
-    // Perform geocoding
-    GeocodingResult result = m_poiService->geocodeAddress(request);
+        // Use Enhanced Geocoding API (Phase 1)
+        geocoding::EnhancedAddressRequest enhancedRequest;
+        enhancedRequest.freeform_address = address.toStdString();  // Support freeform text!
+        enhancedRequest.country_hint = "VN";
+        enhancedRequest.max_results = 5;  // Get multiple candidates
+        enhancedRequest.min_confidence_threshold = 0.5;  // Accept candidates with 50%+ confidence    // Perform enhanced geocoding
+    geocoding::EnhancedGeocodingResult enhancedResult = m_poiService->geocodeAddressEnhanced(enhancedRequest);
+    
+    // Convert to legacy format for backward compatibility
+    GeocodingResult result = GeocodingResult::fromEnhanced(enhancedResult);
     
     auto endTime = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
     double queryTimeMs = duration.count() / 1000.0;
     
-    // Display geocoding results
+    // Display enhanced geocoding results
     QString resultText = QString(
-        "ADDRESS GEOCODING RESULTS\n"
-        "============================\n"
-        "Input address: '%1'\n"
-        "Processing time: %2 ms\n\n"
-    ).arg(address).arg(queryTimeMs, 0, 'f', 3);
+        "ENHANCED GEOCODING RESULTS (Phase 1)\n"
+        "==========================================\n"
+        "Input: '%1'\n"
+        "Processing time: %2 ms\n"
+        "Candidates evaluated: %3\n\n"
+    ).arg(address)
+     .arg(enhancedResult.processing_time_ms, 0, 'f', 3)
+     .arg(enhancedResult.candidates_evaluated);
     
-    if (result.success) {
+    if (enhancedResult.success) {
+        const auto& primary = enhancedResult.primary_result;
+        
         resultText += QString(
-            "GEOCODING SUCCESSFUL!\n\n"
+            "PRIMARY RESULT:\n\n"
             "Coordinates:\n"
             "   Latitude: %1\n"
-            "   Longitude: %2\n\n"
-            "Standardized Address:\n"
-            "   %3\n\n"
-            "Accuracy Metrics:\n"
-            "   Confidence Score: %4\n"
-            "   Match Type: %5\n\n"
-            "WGS84 Coordinate System\n"
-            "   Precision: 6 decimal places (approx 1m accuracy)\n"
-            "   Projection: Geographic (lat/lon)\n"
-        ).arg(result.latitude, 0, 'f', 6)
-         .arg(result.longitude, 0, 'f', 6)
-         .arg(QString::fromStdString(result.standard_address))
-         .arg(result.accuracy, 0, 'f', 2)
-         .arg(QString::fromStdString(result.match_type));
+            "   Longitude: %2\n"
+            "   Altitude: %3 m\n\n"
+            "Formatted Address:\n"
+            "   %4\n\n"
+            "Quality Metrics:\n"
+            "   Confidence: %5%\n"
+            "   Quality: %6\n"
+            "   Accuracy: ±%7 m\n"
+            "   Match Type: %8\n"
+            "   Method: %9\n"
+            "   Source: %10\n\n"
+        ).arg(primary.latitude, 0, 'f', 6)
+         .arg(primary.longitude, 0, 'f', 6)
+         .arg(primary.altitude, 0, 'f', 1)
+         .arg(QString::fromStdString(primary.formatted_address))
+         .arg(primary.confidence_score * 100, 0, 'f', 1)
+         .arg(QString::fromStdString(geocoding::qualityToString(primary.quality)))
+         .arg(primary.accuracy_meters, 0, 'f', 1)
+         .arg(QString::fromStdString(primary.match_type))
+         .arg(QString::fromStdString(primary.geocoding_method))
+         .arg(QString::fromStdString(primary.data_source));
         
-        // Option to set as destination
-        resultText += "\nYou can now use these coordinates for navigation!";
+        // Show alternative candidates if any
+        if (!enhancedResult.alternatives.empty()) {
+            resultText += QString("\nALTERNATIVE CANDIDATES: %1\n")
+                .arg(enhancedResult.alternatives.size());
+            
+            int idx = 1;
+            for (const auto& alt : enhancedResult.alternatives) {
+                if (idx > 3) break;  // Show max 3 alternatives
+                resultText += QString(
+                    "\n%1. %2 (confidence: %3%)\n"
+                    "   Location: %4, %5\n"
+                ).arg(idx)
+                 .arg(QString::fromStdString(alt.formatted_address))
+                 .arg(alt.confidence_score * 100, 0, 'f', 1)
+                 .arg(alt.latitude, 0, 'f', 6)
+                 .arg(alt.longitude, 0, 'f', 6);
+                idx++;
+            }
+        }
+        
+        resultText += "\n\nFeatures Used:\n"
+                      " Freeform text parsing\n"
+                      " USPS address normalization\n"
+                      " Spatial index (R-tree)\n"
+                      " Confidence scoring\n";
         
     } else {
         resultText += QString(
             "GEOCODING FAILED\n\n"
-            "Possible reasons:\n"
-            "- Address format not recognized\n"
-            "- Incomplete address information\n"
-            "- Address not found in database\n\n"
-            "Try:\n"
-            "- More specific address details\n"
-            "- Standard address format\n"
-            "- Known landmark names\n"
-        );
+            "Error: %1\n\n"
+            "Suggestions:\n"
+            "- Try more complete address\n"
+            "- Use format: '123 Main St, City, State'\n"
+            "- Check spelling\n"
+            "- Try known POI names\n"
+        ).arg(QString::fromStdString(enhancedResult.error_message));
     }
     
     m_poiResultsText->setPlainText(resultText);

@@ -16,12 +16,27 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         # Controllers
         controllers/include/integrated_navigation_controller.h
         
-        # Service Cores
-        services/include/positioning_service_core.h
-        services/include/routing_service_core.h
-        services/include/guidance_service_core.h
-        services/include/map_service_core.h
-        services/include/poi_service.h
+        # Service Cores - Geocoding
+        services/geocoding/include/address_components.h
+        services/geocoding/include/enhanced_geocoding.h
+        services/geocoding/include/address_parser.h
+        services/geocoding/include/address_normalizer.h
+        services/geocoding/include/spatial_index.h
+        
+        # Service Cores - POI
+        services/poi/include/poi_service.h
+        
+        # Service Cores - Routing
+        services/routing/include/routing_service_core.h
+        
+        # Service Cores - Guidance
+        services/guidance/include/guidance_service_core.h
+        
+        # Service Cores - Map
+        services/map/include/map_service_core.h
+        
+        # Service Cores - Positioning
+        services/positioning/include/positioning_service_core.h
         
         # Models and Interfaces
         models/include/navigation_models.h
@@ -37,12 +52,26 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         # Controllers
         controllers/src/integrated_navigation_controller.cpp
         
-        # Service Cores
-        services/src/positioning_service_core.cpp
-        services/src/routing_service_core.cpp
-        services/src/guidance_service_core.cpp
-        services/src/map_service_core.cpp
-        services/src/poi_service.cpp
+        # Service Cores - Geocoding
+        services/geocoding/src/address_components.cpp
+        services/geocoding/src/address_parser.cpp
+        services/geocoding/src/address_normalizer.cpp
+        services/geocoding/src/spatial_index.cpp
+        
+        # Service Cores - POI
+        services/poi/src/poi_service.cpp
+        
+        # Service Cores - Routing
+        services/routing/src/routing_service_core.cpp
+        
+        # Service Cores - Guidance
+        services/guidance/src/guidance_service_core.cpp
+        
+        # Service Cores - Map
+        services/map/src/map_service_core.cpp
+        
+        # Service Cores - Positioning
+        services/positioning/src/positioning_service_core.cpp
         
         # Models
         models/src/navigation_models.cpp
@@ -66,7 +95,12 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
     target_include_directories(nav_hmi_gui PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ui/include
         ${CMAKE_CURRENT_SOURCE_DIR}/controllers/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/services/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/geocoding/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/poi/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/routing/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/guidance/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/map/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/positioning/include
         ${CMAKE_CURRENT_SOURCE_DIR}/models/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../common/include
     )
