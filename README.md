@@ -16,19 +16,26 @@ This project implements a complete navigation solution for automotive applicatio
 ## Architecture
 
 ```
-Navigation_t/
+Automotive/
 ├── common/          # Shared libraries and utilities
 │   ├── include/     # Common headers (nav_types.h, nav_utils.h)
 │   └── src/         # Common implementations
 ├── hmi/             # Human-Machine Interface (GUI)
 │   ├── controllers/ # Navigation controllers
 │   ├── models/      # Data models
-│   ├── services/    # Core services (positioning, routing, map, guidance)
+│   ├── services/    # Core services (positioning, routing, map, POI, geocoding)
 │   ├── ui/          # Qt UI components
 │   └── resources/   # Icons and assets
 ├── config/          # Configuration files
-└── docs/            # Documentation
+├── docs/            # Documentation (guides, API docs)
+├── scripts/         # Build and deployment scripts
+└── tests/           # Unit and integration tests
 ```
+
+**Note:** Build artifacts are created outside the repository:
+- `../Automotive-build/` - Build directory
+- `../Automotive-install/` - Installation directory
+- `../Automotive-packages/` - Distribution packages
 
 ## Key Components
 
@@ -37,6 +44,8 @@ Navigation_t/
 - **Map Service** - Map data management and rendering
 - **Routing Service** - A* pathfinding and route optimization
 - **Guidance Service** - Turn-by-turn navigation instructions
+- **POI Service** - Point of Interest search and geocoding
+- **Geocoding Service** - Address parsing, normalization, and reverse geocoding
 
 ### HMI Features
 - Interactive map widget with touch support
@@ -47,42 +56,87 @@ Navigation_t/
 
 ## Build Instructions
 
+### Quick Start
+
+**Windows (Recommended):**
+```powershell
+# From repository root
+.\scripts\build.bat
+```
+
+**Linux/macOS:**
+```bash
+# From repository root
+./scripts/build.sh
+```
+
+**Output Locations:**
+- Build artifacts: `../Automotive-build/`
+- Executable: `../Automotive-install/bin/nav_hmi_gui.exe`
+
+For detailed build options, see [`docs/BUILD_GUIDE.md`](docs/BUILD_GUIDE.md)
+
 ### Prerequisites
 - CMake 3.16+
-- Qt 5.15+ or Qt 6.x
+- Qt 6.6.1+ (msvc2019_64 for Windows)
 - C++17 compatible compiler (GCC 7+, MSVC 2019+, Clang 7+)
+- Google Test (for unit tests)
 
-### Linux
+### Manual Build (Advanced)
+
+#### Linux
 ```bash
-mkdir build && cd build
-cmake ..
+mkdir ../Automotive-build && cd ../Automotive-build
+cmake ../Automotive
 make -j$(nproc)
+make install
 ```
 
-### Windows
-```bash
-mkdir build && cd build
-cmake -G "Visual Studio 16 2019" ..
+#### Windows
+```powershell
+mkdir ..\Automotive-build
+cd ..\Automotive-build
+cmake -G "Visual Studio 17 2022" ..\Automotive
 cmake --build . --config Release
+cmake --install . --config Release
 ```
 
-### Cross-compilation for QNX
+#### Cross-compilation for QNX
 ```bash
-mkdir build-qnx && cd build-qnx
-cmake -DCMAKE_TOOLCHAIN_FILE=qnx.cmake ..
+mkdir ../Automotive-build-qnx
+cd ../Automotive-build-qnx
+cmake -DCMAKE_TOOLCHAIN_FILE=../Automotive/qnx.cmake ../Automotive
 make -j$(nproc)
 ```
 
 ## Quick Start
 
-### Run the GUI Application
-```bash
-./build/hmi/nav_hmi_gui
+### Run the Application
+
+**Windows:**
+```powershell
+.\scripts\run_integrated_nav.bat
 ```
 
-### Run Console Mode
+**Linux/macOS:**
 ```bash
-./build/hmi/nav_hmi_gui --console
+./scripts/run_integrated_nav.sh
+```
+
+**Or run directly:**
+```bash
+..\Automotive-install\bin\nav_hmi_gui.exe
+```
+
+### Rebuild and Run
+
+```powershell
+.\scripts\rebuild_and_run.bat
+```
+
+### Console Mode
+```bash
+..\Automotive-install\bin\nav_hmi_gui.exe --console
 ```
 
 ## Configuration
@@ -95,21 +149,46 @@ Edit [`config/navigation.conf`](config/navigation.conf) to customize:
 
 ## Testing
 
-```bash
-# Enable tests during build
-cmake -DBUILD_TESTS=ON ..
-make
-
-# Run tests
-ctest --verbose
+### Build with Tests
+```powershell
+# Enable tests during CMake configuration
+cd ..\Automotive-build
+cmake -DBUILD_TESTS=ON ..\Automotive
+cmake --build . --config Release
 ```
+
+### Run Tests
+```powershell
+# Run all tests
+cd ..\Automotive-build
+ctest --output-on-failure
+
+# Run specific test
+.\tests\Release\test_address_parser.exe
+```
+
+### Available Tests
+- `test_address_parser` - Address parsing and normalization
+- `test_address_normalizer` - Address standardization
+- `test_spatial_index` - Spatial indexing (R-tree)
+- More tests coming in Phase 2...
 
 ## 📦 Packaging
 
 Create distribution packages:
 
+```powershell
+# Create package
+.\scripts\create_package.bat
+
+# Output: ..\Automotive-packages\AutomotiveNav_v1.0_YYYYMMDD.zip
+```
+
+**Manual packaging:**
+
 ```bash
 # Linux (DEB/RPM)
+cd ../Automotive-build
 cpack -G DEB
 cpack -G RPM
 
@@ -122,10 +201,28 @@ cpack --config CPackSourceConfig.cmake
 
 ## 📖 Documentation
 
-- [Service Integration](docs/SERVICE_INTEGRATION.md) - Service architecture details
-- [Qt Framework Integration](docs/QT_FRAMEWORK_INTEGRATION.md) - Qt/GUI implementation
-- [Cross-Platform Build](CROSS_PLATFORM_BUILD_SUMMARY.md) - Build system guide
-- [Enhanced HMI Features](docs/ENHANCED_HMI_FEATURES.md) - UI components
+### Core Documentation
+- [`README.md`](README.md) - This file (project overview)
+- [`docs/BUILD_GUIDE.md`](docs/BUILD_GUIDE.md) - Detailed build instructions
+- [`docs/BUILD_SCRIPTS_GUIDE.md`](docs/BUILD_SCRIPTS_GUIDE.md) - Script usage guide
+- [`scripts/README.md`](scripts/README.md) - Build scripts reference
+
+### Architecture & Design
+- [`docs/SERVICE_INTEGRATION.md`](docs/SERVICE_INTEGRATION.md) - Service architecture details
+- [`docs/QT_FRAMEWORK_INTEGRATION.md`](docs/QT_FRAMEWORK_INTEGRATION.md) - Qt/GUI implementation
+- [`docs/ENHANCED_HMI_FEATURES.md`](docs/ENHANCED_HMI_FEATURES.md) - UI components guide
+
+### Phase 1: Enhanced Geocoding
+- [`docs/GEOCODER_MODERNIZATION_ANALYSIS.md`](docs/GEOCODER_MODERNIZATION_ANALYSIS.md) - Modernization analysis
+- [`docs/PHASE1_COMPLETE_GUIDE.md`](docs/PHASE1_COMPLETE_GUIDE.md) - Phase 1 implementation guide
+  - Address parsing and normalization
+  - Spatial indexing (R-tree)
+  - Enhanced geocoding API
+  - 40+ unit tests
+
+### Deployment
+- [`scripts/deploy.config`](scripts/deploy.config) - Deployment configuration
+- [`docs/ICON_REMOVAL_SUMMARY.md`](docs/ICON_REMOVAL_SUMMARY.md) - Icon optimization notes
 
 ## Technology Stack
 
