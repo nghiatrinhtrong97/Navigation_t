@@ -23,11 +23,12 @@ Navigation_t/
 ├── hmi/             # Human-Machine Interface (GUI)
 │   ├── controllers/ # Navigation controllers
 │   ├── models/      # Data models
-│   ├── services/    # Core services (positioning, routing, map, guidance)
+│   ├── services/    # Core services (positioning, routing, map, guidance, POI, geocoding)
 │   ├── ui/          # Qt UI components
 │   └── resources/   # Icons and assets
 ├── config/          # Configuration files
-└── docs/            # Documentation
+├── docs/            # Documentation
+└── scripts/         # Build and deployment scripts
 ```
 
 ## Key Components
@@ -37,6 +38,8 @@ Navigation_t/
 - **Map Service** - Map data management and rendering
 - **Routing Service** - A* pathfinding and route optimization
 - **Guidance Service** - Turn-by-turn navigation instructions
+- **POI Service** - Point of Interest search and management
+- **Geocoding Service** - Address parsing, normalization, and spatial indexing (Phase 1 Enhanced API)
 
 ### HMI Features
 - Interactive map widget with touch support
@@ -49,21 +52,36 @@ Navigation_t/
 
 ### Prerequisites
 - CMake 3.16+
-- Qt 5.15+ or Qt 6.x
+- Qt 6.6.1 (msvc2019_64 for Windows)
 - C++17 compatible compiler (GCC 7+, MSVC 2019+, Clang 7+)
+
+### Quick Build (Windows)
+
+```powershell
+# From repository root
+.\scripts\build.bat
+
+# Quick rebuild and run
+.\scripts\rebuild_and_run.bat
+
+# Run without rebuilding
+.\scripts\run_integrated_nav.bat
+```
+
+> **Note:** Build artifacts are created **outside** the repository in `../build_Automotive` and `../install_Automotive`
 
 ### Linux
 ```bash
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
+./scripts/build.sh
 ```
 
-### Windows
+### Manual Build (Windows)
+
 ```bash
 mkdir build && cd build
-cmake -G "Visual Studio 16 2019" ..
+cmake -G "Visual Studio 16 2019" -DCMAKE_PREFIX_PATH="C:/Qt/6.6.1/msvc2019_64" ..
 cmake --build . --config Release
+cmake --install . --config Release
 ```
 
 ### Cross-compilation for QNX
@@ -77,12 +95,25 @@ make -j$(nproc)
 
 ### Run the GUI Application
 ```bash
-./build/hmi/nav_hmi_gui
+# Windows
+.\scripts\run_integrated_nav.bat
+
+# Linux
+./scripts/run_integrated_nav.sh
+
+# Or directly from install directory
+../install_Automotive/bin/nav_hmi_gui.exe
 ```
 
-### Run Console Mode
-```bash
-./build/hmi/nav_hmi_gui --console
+### Development Workflow
+```powershell
+# 1. First build
+.\scripts\build.bat
+
+# 2. Make code changes...
+
+# 3. Quick rebuild and test
+.\scripts\rebuild_and_run.bat
 ```
 
 ## Configuration
@@ -122,10 +153,28 @@ cpack --config CPackSourceConfig.cmake
 
 ## 📖 Documentation
 
+### Core Documentation
+- [README](README.md) - This file
 - [Service Integration](docs/SERVICE_INTEGRATION.md) - Service architecture details
 - [Qt Framework Integration](docs/QT_FRAMEWORK_INTEGRATION.md) - Qt/GUI implementation
-- [Cross-Platform Build](CROSS_PLATFORM_BUILD_SUMMARY.md) - Build system guide
 - [Enhanced HMI Features](docs/ENHANCED_HMI_FEATURES.md) - UI components
+
+### Build & Deployment
+- [Build Guide](docs/BUILD_GUIDE.md) - Detailed build instructions
+- [Build Scripts Guide](docs/BUILD_SCRIPTS_GUIDE.md) - Script usage and customization
+- [Build Structure](docs/BUILD_STRUCTURE.md) - Project structure explanation
+- [Scripts README](scripts/README.md) - Quick reference for build scripts
+- [Migration Guide](docs/MIGRATION_GUIDE.md) - Migration from old build structure
+
+### Phase 1 - Enhanced Geocoding (COMPLETE ✅)
+- [Geocoder Modernization Analysis](docs/GEOCODER_MODERNIZATION_ANALYSIS.md) - Initial analysis
+- [Phase 1 Complete Guide](docs/PHASE1_COMPLETE_GUIDE.md) - Implementation details
+- **Features**: Address parser, normalizer, spatial indexing, confidence scoring
+
+### Phase 2 - Performance & Scalability (PLANNED 📋)
+- [Phase 2 Implementation Plan](docs/PHASE2_IMPLEMENTATION_PLAN.md) - Detailed roadmap
+- [Phase 2 Complete Guide](docs/PHASE2_COMPLETE_GUIDE.md) - Implementation guide
+- **Features**: Fuzzy matching, caching, batch geocoding (code ready, temporarily reverted)
 
 ## Technology Stack
 
