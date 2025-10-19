@@ -6,27 +6,36 @@ echo === Building Automotive Navigation System for Windows ===
 set BUILD_TYPE=%1
 if "%BUILD_TYPE%"=="" set BUILD_TYPE=Release
 
-set BUILD_DIR=build
-set INSTALL_DIR=install
+REM Get the parent directory (outside repo)
+REM %~dp0 is scripts directory, we need to go up one level to get repo root
+for %%I in ("%~dp0..") do set "REPO_DIR=%%~fI"
+for %%I in ("%REPO_DIR%\..") do set "PARENT_DIR=%%~fI"
+
+REM Set build and install directories OUTSIDE the repo
+set "BUILD_DIR=%PARENT_DIR%\Automotive_build"
+set "INSTALL_DIR=%PARENT_DIR%\Automotive_install"
 
 echo Build type: %BUILD_TYPE%
+echo Repository: %REPO_DIR%
+echo Build directory: %BUILD_DIR%
+echo Install directory: %INSTALL_DIR%
 
 REM Clean previous build if requested
 if "%2"=="clean" (
     echo Cleaning previous build...
-    rmdir /s /q %BUILD_DIR% 2>nul
-    rmdir /s /q %INSTALL_DIR% 2>nul
+    rmdir /s /q "%BUILD_DIR%" 2>nul
+    rmdir /s /q "%INSTALL_DIR%" 2>nul
 )
 
 REM Create build directory
-if not exist %BUILD_DIR% mkdir %BUILD_DIR%
-cd %BUILD_DIR%
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+cd /d "%BUILD_DIR%"
 
 REM Configure with CMake - auto-detect Qt and Visual Studio
 echo Configuring with CMake...
-cmake .. -G "Visual Studio 16 2019" -A x64 ^
+cmake "%REPO_DIR%" -G "Visual Studio 16 2019" -A x64 ^
     -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-    -DCMAKE_INSTALL_PREFIX=../%INSTALL_DIR% ^
+    -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%" ^
     -DBUILD_TESTS=OFF
 
 if %ERRORLEVEL% neq 0 (
@@ -90,7 +99,7 @@ if exist hmi\%BUILD_TYPE%\nav_hmi_gui.exe (
     )
 )
 
-cd ..
+cd "%REPO_DIR%"
 
 echo === Build Complete ===
 echo Binaries installed in: %INSTALL_DIR%\bin
