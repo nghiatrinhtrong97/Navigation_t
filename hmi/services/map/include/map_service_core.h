@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../models/include/navigation_models.h"
+#include "navigation_models.h"
 #include "poi_service.h"  // Include POI struct from poi_service
 #include <QObject>
 #include <QTimer>

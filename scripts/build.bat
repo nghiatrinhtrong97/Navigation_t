@@ -7,7 +7,8 @@ set BUILD_TYPE=%1
 if "%BUILD_TYPE%"=="" set BUILD_TYPE=Release
 
 REM Get the parent directory (outside repo)
-for %%I in ("%~dp0.") do set "REPO_DIR=%%~fI"
+REM %~dp0 is scripts directory, we need to go up one level to get repo root
+for %%I in ("%~dp0..") do set "REPO_DIR=%%~fI"
 for %%I in ("%REPO_DIR%\..") do set "PARENT_DIR=%%~fI"
 
 REM Set build and install directories OUTSIDE the repo

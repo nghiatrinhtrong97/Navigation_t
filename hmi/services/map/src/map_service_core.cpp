@@ -1,4 +1,4 @@
-#include "../include/map_service_core.h"
+#include "map_service_core.h"
 #include <QDebug>
 #include <QRandomGenerator>
 #include <algorithm>

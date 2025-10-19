@@ -1,4 +1,4 @@
-#include "../include/guidance_service_core.h"
+#include "guidance_service_core.h"
 #include <QDebug>
 #include <cmath>
 #include <cstring>

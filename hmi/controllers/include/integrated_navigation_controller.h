@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../../models/include/navigation_models.h"
+#include "navigation_models.h"
 #include "nav_messages.h"
-#include "../../services/include/positioning_service_core.h"
-#include "../../services/include/routing_service_core.h"
-#include "../../services/include/guidance_service_core.h"
-#include "../../services/include/map_service_core.h"
-#include "../../services/include/poi_service.h"
+#include "positioning_service_core.h"
+#include "routing_service_core.h"
+#include "guidance_service_core.h"
+#include "map_service_core.h"
+#include "poi_service.h"
 #include <QObject>
 #include <QTimer>
 #include <QMutex>

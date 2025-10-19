@@ -1,7 +1,7 @@
-#include "../../ui/include/navigation_main_window.h"
-#include "../../models/include/navigation_models.h"
-#include "../../ui/include/map_widget.h"
-#include "../../controllers/include/integrated_navigation_controller.h"
+#include "navigation_main_window.h"
+#include "navigation_models.h"
+#include "map_widget.h"
+#include "integrated_navigation_controller.h"
 #include <QApplication>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -39,7 +39,7 @@
 #include <QDebug>
 #include <cmath>
 
-#include "../../services/include/poi_service.h"
+#include "poi_service.h"
 #include <chrono>
 #include <QTimer>
 #include <QSpinBox>

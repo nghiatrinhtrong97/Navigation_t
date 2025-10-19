@@ -1,4 +1,4 @@
-#include "../include/routing_service_core.h"
+#include "routing_service_core.h"
 #include <QDebug>
 #include <QRandomGenerator>
 #include <cmath>

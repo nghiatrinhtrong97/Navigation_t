@@ -16,12 +16,12 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         # Controllers
         controllers/include/integrated_navigation_controller.h
         
-        # Service Cores
-        services/include/positioning_service_core.h
-        services/include/routing_service_core.h
-        services/include/guidance_service_core.h
-        services/include/map_service_core.h
-        services/include/poi_service.h
+        # Service Cores (new modular structure)
+        services/positioning/include/positioning_service_core.h
+        services/routing/include/routing_service_core.h
+        services/guidance/include/guidance_service_core.h
+        services/map/include/map_service_core.h
+        services/poi/include/poi_service.h
         
         # Models and Interfaces
         models/include/navigation_models.h
@@ -37,12 +37,12 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
         # Controllers
         controllers/src/integrated_navigation_controller.cpp
         
-        # Service Cores
-        services/src/positioning_service_core.cpp
-        services/src/routing_service_core.cpp
-        services/src/guidance_service_core.cpp
-        services/src/map_service_core.cpp
-        services/src/poi_service.cpp
+        # Service Cores (new modular structure)
+        services/positioning/src/positioning_service_core.cpp
+        services/routing/src/routing_service_core.cpp
+        services/guidance/src/guidance_service_core.cpp
+        services/map/src/map_service_core.cpp
+        services/poi/src/poi_service.cpp
         
         # Models
         models/src/navigation_models.cpp
@@ -66,7 +66,12 @@ if(BUILD_GUI AND (Qt5_FOUND OR Qt6_FOUND))
     target_include_directories(nav_hmi_gui PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ui/include
         ${CMAKE_CURRENT_SOURCE_DIR}/controllers/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/services/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/positioning/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/routing/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/guidance/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/map/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/poi/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/geocoding/include
         ${CMAKE_CURRENT_SOURCE_DIR}/models/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../common/include
     )

@@ -1,4 +1,4 @@
-#include "../include/positioning_service_core.h"
+#include "positioning_service_core.h"
 #include <QDebug>
 #include <QRandomGenerator>
 

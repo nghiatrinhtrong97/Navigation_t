@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../models/include/navigation_models.h"
+#include "navigation_models.h"
 #include <QObject>
 #include <QTimer>
 #include <QDateTime>

@@ -6,7 +6,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <vector>
-#include "../../models/include/navigation_models.h"  // Use Point from navigation_models
+#include "navigation_models.h"  // Use Point from navigation_models
 
 namespace nav {
 

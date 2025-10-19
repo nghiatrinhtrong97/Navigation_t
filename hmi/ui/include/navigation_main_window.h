@@ -37,8 +37,8 @@
 #include "nav_types.h"
 #include "nav_messages.h"
 #include "nav_utils.h"
-#include "../../controllers/include/integrated_navigation_controller.h"
-#include "../../services/include/poi_service.h"
+#include "integrated_navigation_controller.h"
+#include "poi_service.h"
 #include "map_widget.h"
 #include "service_interfaces.h"
 

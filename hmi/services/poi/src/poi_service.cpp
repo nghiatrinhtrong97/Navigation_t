@@ -1,4 +1,4 @@
-#include "../include/poi_service.h"
+#include "poi_service.h"
 #include <QFile>
 #include <QIODevice>
 #include <QJsonDocument>
