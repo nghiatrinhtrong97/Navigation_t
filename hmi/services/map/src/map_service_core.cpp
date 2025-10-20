@@ -198,8 +198,8 @@ void MapServiceCore::clearTileCache()
 std::vector<QString> MapServiceCore::getAvailableCategories() const
 {
     std::vector<QString> categories;
-    for (const auto& pair : m_categoryIndex) {
-        categories.push_back(pair.first);
+    for (const auto& [category_name, category_data] : m_categoryIndex) {
+        categories.push_back(category_name);
     }
     return categories;
 }
@@ -212,8 +212,8 @@ int MapServiceCore::getTotalPOICount() const
 int MapServiceCore::getLoadedTileCount() const
 {
     int loadedCount = 0;
-    for (const auto& pair : m_tileCache) {
-        if (pair.second.loaded) {
+    for (const auto& [tile_key, tile_data] : m_tileCache) {
+        if (tile_data.loaded) {
             loadedCount++;
         }
     }

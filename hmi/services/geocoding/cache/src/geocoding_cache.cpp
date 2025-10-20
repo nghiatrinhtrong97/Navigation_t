@@ -21,14 +21,15 @@ void InMemoryGeocodingCache::put(const std::string& query, const nav::geocoding:
     auto it = m_cache_map.find(key);
     if (it != m_cache_map.end()) {
         // Update existing entry
-        it->second.first.result = std::make_shared<nav::geocoding::EnhancedGeocodingResult>(result);
-        it->second.first.timestamp = std::chrono::steady_clock::now();
-        it->second.first.access_count++;
+        auto& [cache_entry, lru_iterator] = it->second;
+        cache_entry.result = std::make_shared<nav::geocoding::EnhancedGeocodingResult>(result);
+        cache_entry.timestamp = std::chrono::steady_clock::now();
+        cache_entry.access_count++;
         
         // Move to front (most recent)
-        m_lru_list.erase(it->second.second);
+        m_lru_list.erase(lru_iterator);
         m_lru_list.push_front(key);
-        it->second.second = m_lru_list.begin();
+        lru_iterator = m_lru_list.begin();
     } else {
         // Check if cache is full
         if (m_cache_map.size() >= m_max_size) {
@@ -58,24 +59,25 @@ std::optional<nav::geocoding::EnhancedGeocodingResult> InMemoryGeocodingCache::g
     }
     
     // Check if expired
-    if (isExpired(it->second.first)) {
+    auto& [cache_entry, lru_iterator] = it->second;
+    if (isExpired(cache_entry)) {
         // Remove expired entry
-        m_lru_list.erase(it->second.second);
+        m_lru_list.erase(lru_iterator);
         m_cache_map.erase(it);
         ++m_misses;
         return std::nullopt;
     }
     
     // Update access info
-    it->second.first.access_count++;
+    cache_entry.access_count++;
     
     // Move to front (most recent)
-    m_lru_list.erase(it->second.second);
+    m_lru_list.erase(lru_iterator);
     m_lru_list.push_front(key);
-    it->second.second = m_lru_list.begin();
+    lru_iterator = m_lru_list.begin();
     
     ++m_hits;
-    return *(it->second.first.result);
+    return *(cache_entry.result);
 }
 
 bool InMemoryGeocodingCache::contains(const std::string& query) const {
@@ -88,7 +90,8 @@ bool InMemoryGeocodingCache::contains(const std::string& query) const {
         return false;
     }
     
-    return !isExpired(it->second.first);
+    const auto& [cache_entry, lru_iterator] = it->second;
+    return !isExpired(cache_entry);
 }
 
 void InMemoryGeocodingCache::clear() {
@@ -108,8 +111,9 @@ size_t InMemoryGeocodingCache::evictExpired() {
     auto it = m_cache_map.begin();
     
     while (it != m_cache_map.end()) {
-        if (isExpired(it->second.first)) {
-            m_lru_list.erase(it->second.second);
+        auto& [cache_entry, lru_iterator] = it->second;
+        if (isExpired(cache_entry)) {
+            m_lru_list.erase(lru_iterator);
             it = m_cache_map.erase(it);
             ++evicted;
             ++m_evictions;
@@ -192,9 +196,10 @@ void InMemoryGeocodingCache::updateLRU(const std::string& query) {
     
     if (it != m_cache_map.end()) {
         // Move to front
-        m_lru_list.erase(it->second.second);
+        auto& [cache_entry, lru_iterator] = it->second;
+        m_lru_list.erase(lru_iterator);
         m_lru_list.push_front(key);
-        it->second.second = m_lru_list.begin();
+        lru_iterator = m_lru_list.begin();
     }
 }
 

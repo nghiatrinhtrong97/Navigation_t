@@ -139,8 +139,8 @@ std::vector<AddressRecord> SpatialIndex::queryRegion(const BoundingBox& bbox) co
         std::back_inserter(tree_results)
     );
     
-    for (const auto& value : tree_results) {
-        results.push_back(value.second);
+    for (const auto& [point, address_record] : tree_results) {
+        results.push_back(address_record);
     }
     
 #else
@@ -192,13 +192,15 @@ std::vector<AddressRecord> SpatialIndex::queryRadius(
     
     // Sort by distance ascending
     std::sort(scored.begin(), scored.end(),
-        [](const auto& a, const auto& b) { return a.second < b.second; });
+        [](const auto& a, const auto& b) { 
+            return a.second < b.second; 
+        });
     
     // Extract addresses
     std::vector<AddressRecord> results;
     results.reserve(scored.size());
-    for (const auto& pair : scored) {
-        results.push_back(pair.first);
+    for (const auto& [address, distance] : scored) {
+        results.push_back(address);
     }
     
     qDebug() << "[SPATIAL INDEX] Radius query returned" << results.size() 
@@ -229,17 +231,18 @@ std::vector<AddressRecord> SpatialIndex::findNearestAddresses(
     
     // Calculate exact distances and sort
     std::vector<std::pair<AddressRecord, double>> scored;
-    for (const auto& value : nearest) {
-        const AddressRecord& addr = value.second;
-        double distance = calculateDistance(location, addr.location);
-        scored.emplace_back(addr, distance);
+    for (const auto& [point, address_record] : nearest) {
+        double distance = calculateDistance(location, address_record.location);
+        scored.emplace_back(address_record, distance);
     }
     
     std::sort(scored.begin(), scored.end(),
-        [](const auto& a, const auto& b) { return a.second < b.second; });
+        [](const auto& a, const auto& b) { 
+            return a.second < b.second; 
+        });
     
-    for (const auto& pair : scored) {
-        results.push_back(pair.first);
+    for (const auto& [address, distance] : scored) {
+        results.push_back(address);
     }
     
 #else
@@ -255,15 +258,19 @@ std::vector<AddressRecord> SpatialIndex::findNearestAddresses(
     // Partial sort to get k smallest
     if (scored.size() > k) {
         std::partial_sort(scored.begin(), scored.begin() + k, scored.end(),
-            [](const auto& a, const auto& b) { return a.second < b.second; });
+            [](const auto& a, const auto& b) { 
+                return a.second < b.second; 
+            });
         scored.resize(k);
     } else {
         std::sort(scored.begin(), scored.end(),
-            [](const auto& a, const auto& b) { return a.second < b.second; });
+            [](const auto& a, const auto& b) { 
+                return a.second < b.second; 
+            });
     }
     
-    for (const auto& pair : scored) {
-        results.push_back(pair.first);
+    for (const auto& [address, distance] : scored) {
+        results.push_back(address);
     }
 #endif
     

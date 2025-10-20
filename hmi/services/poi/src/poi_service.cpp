@@ -406,22 +406,22 @@ geocoding::EnhancedGeocodingResult POIService::geocodeAddressEnhanced(
             parsed_components, candidates, 5);
         
         if (!fuzzy_matches.empty()) {
-            const auto& best_match = fuzzy_matches[0];
+            const auto& [matched_address, match_scores] = fuzzy_matches[0];
             qDebug() << "[POI SERVICE] Fuzzy match found with score:" 
-                     << best_match.second.overall_score;
+                     << match_scores.overall_score;
             
             // Update result with fuzzy match if better than exact match
-            if (best_match.second.overall_score > result.primary_result.confidence_score) {
+            if (match_scores.overall_score > result.primary_result.confidence_score) {
                 // Find corresponding POI coordinates
                 for (const auto& poi : m_poiDatabase) {
                     try {
                         geocoding::AddressComponents poi_components = parser.parse(poi.address, "VN");
                         if (poi_components.toFormattedString("display") == 
-                            best_match.first.toFormattedString("display")) {
+                            matched_address.toFormattedString("display")) {
                             result.primary_result.latitude = poi.latitude;
                             result.primary_result.longitude = poi.longitude;
                             result.primary_result.formatted_address = poi.address;
-                            result.primary_result.confidence_score = best_match.second.overall_score;
+                            result.primary_result.confidence_score = match_scores.overall_score;
                             result.primary_result.match_type = "fuzzy_match";
                             result.primary_result.geocoding_method = "fuzzy_address_matching";
                             result.success = true;
